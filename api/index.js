@@ -1,13 +1,18 @@
 // import authenticate from '../src/Authenticate';
+const { Web3Storage, getFilesFromPath } = require('web3.storage');
+const fileUpload = require('express-fileupload');
 const fs = require("fs");
 const { parse } = require("csv-parse");
 const getStream = require('get-stream');
+const bodyParser = require('body-parser');
 
 const express = require('express');
 const app = express();
 const PORT = 5000;
 
+app.use(fileUpload());
 app.use(express.json());
+app.use(bodyParser.urlencoded({extended: true}));
 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
@@ -23,6 +28,8 @@ app.listen(
     PORT, 
     () => console.log('listening')
 );
+
+const client = getClient();
 
 async function authenticate(username, password) {
     console.log('usa', username);
@@ -78,3 +85,47 @@ app.post('/authenticate', async (req, res) => {
         })
     }
 });
+
+app.post('/upload', (req, res) =>  {
+    console.log(req.files);
+    const file = req.files.file;
+    const fileName = req.body.fileName;
+    const filePath =  '../public/'  + fileName;
+
+    file.mv(filePath, async (err)  => {
+        if (err) {
+            console.log('Error: failed to download the file');
+            return res.status(500).send(err);
+        }
+
+        const fileHash = await addFile(fileName, filePath);
+        
+        fs.unlink(filePath, (err) => {
+            if (err) console.log(err);
+        });
+
+        const link = getLink(fileHash,fileName);
+        // listUploads();
+        console.log(link);
+        res.status(200).send({msg: 'File uploaded!', link: link});
+    })
+});
+
+async function addFile(fileName, filePath) {
+    // Pack files into a CAR and send to web3.storage
+    const files = await getFilesFromPath(filePath)
+    const fileHash = await client.put(files)
+    return fileHash
+}
+
+function getLink(fileHash, fileName) {
+    return "https://"+fileHash+".ipfs.w3s.link/"+fileName
+}
+
+function getToken() {
+    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDJCMzdFZmJlZDFCNDNhZWNkRkM3RThhRjFkQTg2RkI0Y2Y1MDEwMDkiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2Njg5NjAxNzEwNDQsIm5hbWUiOiJoZWFsdGhBcHAifQ.oWtGq8EecLBhShX6nmLIaSqJUvoNUH8d0bAugvWa4i0";
+}
+
+function getClient() {
+    return new Web3Storage({ token: getToken() })
+}
