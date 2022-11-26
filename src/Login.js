@@ -15,6 +15,7 @@ function Login () {
         
         const res = await axios.post('http://localhost:5000/authenticate', { username, password });
         if(res.status === 200) {
+            user = username;
             if (res.data.userType === 'patient')
                 navigate('/PDashboard');
             else
@@ -41,7 +42,7 @@ function Login () {
                     <input type='username' name='username' placeholder='health card number' required />
                     <input type='password' name='password' placeholder='password' required />
                     <button className="login-button" type="menu-button" onClick={authenticate}> Login </button>
-                    <h3>New User? Create an account</h3>
+                    <a href="/new-user">New User? Create an account</a>
                 </form>
             </div>
         </Box>

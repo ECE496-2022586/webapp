@@ -5,6 +5,7 @@ const fs = require("fs");
 const { parse } = require("csv-parse");
 const getStream = require('get-stream');
 const bodyParser = require('body-parser');
+const fastcsv = require('fast-csv');
 
 const express = require('express');
 const app = express();
@@ -77,13 +78,35 @@ app.post('/authenticate', async (req, res) => {
     if (loggedIn == 'fail'){
         res.status(403).send({
             msg: 'Health card number or password is incorrect.',
-        })
+        });
     } else {
         res.status(200).send({
             msg: 'Login successfull!',
             userType: loggedIn,
-        })
+        });
     }
+});
+
+app.post('/addUser', (req, res) =>  {
+    console.log(req.body);
+    const { name, lastName, email, HCNumber, password } = req.body;
+    console.log(name, lastName, email, HCNumber, password);
+      
+    const data = [{
+        HCNumber,
+        name,
+        lastName,
+        email,
+        password,
+    }];
+
+    const ws = fs.createWriteStream("../src/Patients.csv", {flags: 'a'});
+    fastcsv
+        .write(data, { headers: false })
+        .pipe(ws);
+    // writer.pipe(fs.createWriteStream('../src/Patients.csv', {flags: 'a'}));
+    // writer.write(data, { headers: false });
+    res.status(200).send({});
 });
 
 app.post('/upload', (req, res) =>  {

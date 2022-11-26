@@ -1,13 +1,13 @@
 import React from "react";
 import Header from "./Header";
 import Box from "./Box";
+import { user } from "./Login";
 
 function PatientDashboard() {
-    console.log('user');
     return (
         <div className="pdashboard">
           <Header />
-          <h2 style={{marginLeft: 550, marginTop: 70}}>Welcome to your dashboard!</h2>
+          <h2 style={{marginLeft: 450, marginTop: 70}}>Welcome to your dashboard {user} !</h2>
           <Box style={{
             backgroundColor: '#ACC578',
             color: 'white',

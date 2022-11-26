@@ -6,6 +6,7 @@ import Home from './Home';
 import UploadPage from './UploadPage';
 import PatientDashboard from './PatientDash';
 import MedicalFacilityDashboard from './MedicalFacilityDash';
+import NewUser from './NewUser';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         {/* <Route path="/how-to" element={<HowTo />}/> */}
         <Route path="/PDashboard" element={<PatientDashboard />}/>
         <Route path="/MFDashboard" element={<MedicalFacilityDashboard />}/>
+        <Route path="/new-user" element={<NewUser />}/>
       </Routes>
     </Router>
   );
