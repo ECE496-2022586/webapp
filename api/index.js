@@ -6,10 +6,47 @@ const { parse } = require("csv-parse");
 const getStream = require('get-stream');
 const bodyParser = require('body-parser');
 const fastcsv = require('fast-csv');
-
+const session = require('express-session');
+const redis = require('redis');
+const connectRedis = require('connect-redis');
 const express = require('express');
+
 const app = express();
 const PORT = 5000;
+
+const RedisStore = connectRedis(session)
+const redisClient = redis.createClient({
+    legacyMode: true 
+})
+redisClient.connect().catch(console.error);
+redisClient.on('error', function (err) {
+    console.log('Could not establish a connection with redis. ' + err);
+});
+redisClient.on('connect', function (err) {
+    console.log('Connected to redis successfully');
+});
+
+app.use(
+    session({
+      store: new RedisStore({ client: redisClient }),
+      saveUninitialized: true,
+      secret: "ssshhhhh",
+      resave: false,
+      name: 'test',
+      cookie: {
+        secure: false,
+        httpOnly: false, 
+        maxAge:  24 * 60 * 60 * 1000 //in millisecond and right now saves for a day
+    }
+    })
+  )
+
+app.use(function (req, res, next) {
+    if (!req.session) {
+      return next(new Error("oh no"))
+    }
+    next() 
+  })
 
 app.use(fileUpload());
 app.use(express.json());
@@ -80,6 +117,9 @@ app.post('/authenticate', async (req, res) => {
             msg: 'Health card number or password is incorrect.',
         });
     } else {
+        req.session.username = username;
+        req.session.password = password;
+        console.log(req.session)
         res.status(200).send({
             msg: 'Login successfull!',
             userType: loggedIn,
@@ -107,6 +147,27 @@ app.post('/addUser', (req, res) =>  {
     // writer.pipe(fs.createWriteStream('../src/Patients.csv', {flags: 'a'}));
     // writer.write(data, { headers: false });
     res.status(200).send({});
+});
+
+app.get('/current-session', (req, res) => {
+    let sess = req.session;
+    console.log(sess.username);
+    if(sess.username) {
+        return res.send(true);
+    }
+    return res.send(false);
+});
+
+app.get('/logout',(req,res) => {
+    console.log("logging out now...")
+    req.session.destroy((err) => {
+        if(err) {
+            console.log(err);
+            return res.status(500).send(err);
+        }
+        res.status(200).send({});
+    });
+
 });
 
 app.post('/upload', (req, res) =>  {

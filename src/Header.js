@@ -1,8 +1,41 @@
-import React from "react";
+import { React, useState, useEffect} from "react";
 import { Link } from 'react-router-dom';
 import Box from "./Box";
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function NavBar() {
+    const [auth, setAuth] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+         axios.get('/current-session').then(({data}) => {
+          setAuth(data);
+          console.log(auth);
+        })
+      }, [auth])
+
+    const logout = async (e) => {
+        e.preventDefault();
+        const res = await axios.get('/logout');
+        if(res.status === 200) {
+            navigate('/');
+        }
+    }
+
+    let loginButton;
+    if (!auth) {
+      loginButton = <Link to="/login">
+                    <menu-button
+                    className="home-button"
+                    type="button"
+                    >
+                        Login
+                    </menu-button>
+                </Link>
+    } else {
+        loginButton = <button className="logout-button" type="menu-button" onClick={logout}> Logout </button>;
+    }
     return(
       <div className='menu-bar'>
           <Box style={{
@@ -33,14 +66,7 @@ function NavBar() {
                         How-to
                     </menu-button>
                 </Link>   
-                <Link to="/login">
-                    <menu-button
-                    className="home-button"
-                    type="button"
-                    >
-                        Login
-                    </menu-button>
-                </Link>
+                {loginButton}  
           </Box>
         </div>
     );
@@ -61,7 +87,7 @@ function Header() {
             }}>
                 HealthChainON
             </Box>
-            <NavBar />
+            <NavBar/>
         </div>
     );
 }

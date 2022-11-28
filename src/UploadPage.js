@@ -23,7 +23,7 @@ function UploadPage() {
         
         const res = await axios({
             method: 'post',
-            url: 'http://localhost:5000/upload',
+            url: '/upload',
             data: formData,
             headers: {
                 "Content-Type": "multipart/form-data",
@@ -42,7 +42,7 @@ function UploadPage() {
     
     return(
         <div className='upload-page'>
-            <Header />
+            <Header/>
             <Box style={{
                 width: 700,
                 wordWrap: true,
