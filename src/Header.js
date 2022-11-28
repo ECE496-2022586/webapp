@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Box from "./Box";
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { user } from './Login';
 
 function NavBar() {
     const [auth, setAuth] = useState(null);
@@ -11,15 +12,14 @@ function NavBar() {
     useEffect(() => {
          axios.get('/current-session').then(({data}) => {
           setAuth(data);
-          console.log(auth);
         })
       }, [auth])
 
     const logout = async (e) => {
-        e.preventDefault();
         const res = await axios.get('/logout');
         if(res.status === 200) {
             navigate('/');
+            window.location.reload();
         }
     }
 
@@ -35,6 +35,18 @@ function NavBar() {
                 </Link>
     } else {
         loginButton = <button className="logout-button" type="menu-button" onClick={logout}> Logout </button>;
+    }
+    let upload;
+
+    if(user && !user.isPatient) {
+        upload  =   <Link to='/uploadpage'>
+                        <menu-button
+                            className="home-button"
+                            type="button"
+                        >
+                            Upload
+                        </menu-button>
+                    </Link> 
     }
     return(
       <div className='menu-bar'>
@@ -66,7 +78,8 @@ function NavBar() {
                         How-to
                     </menu-button>
                 </Link>   
-                {loginButton}  
+                {loginButton}
+                {upload}
           </Box>
         </div>
     );

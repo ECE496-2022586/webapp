@@ -7,7 +7,7 @@ function PatientDashboard() {
     return (
         <div className="pdashboard">
           <Header />
-          <h2 style={{marginLeft: 450, marginTop: 70}}>Welcome to your dashboard {user} !</h2>
+          <h2 style={{marginLeft: 450, marginTop: 70}}>Welcome to your dashboard {user && user.name} !</h2>
           <Box style={{
             backgroundColor: '#ACC578',
             color: 'white',

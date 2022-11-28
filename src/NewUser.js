@@ -25,7 +25,7 @@ function NewUser() {
             console.log('Your password is not long enough:(');
         
         console.log(name, lastName, email, cEmail, HCNumber, password, cPassword);
-        const res = await axios.post('http://localhost:5000/addUser', { name, lastName, email, HCNumber, password });
+        const res = await axios.post('/addUser', { name, lastName, email, HCNumber, password });
         if (res.status === 200) {
             console.log('You are my strange addiction');
             navigate('/login');

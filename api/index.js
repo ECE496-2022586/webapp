@@ -79,29 +79,29 @@ async function authenticate(username, password) {
     const patientData = await getStream.array(fs.createReadStream("../src/Patients.csv").pipe(patientParseStream));
     for (let i = 0; i<patientData.length; i+=1) {
         let row = patientData[i];
-        patients[row[0]] = row[4];
+        patients[row[0]] = new Patients(row[0],row[1],row[2],row[3],row[4],true);
     }
 
     const medParseStream = parse({delimiter: ',', from_line: 2});
     const medFacilData = await getStream.array(fs.createReadStream("../src/MedicalFacilities.csv").pipe(medParseStream));
     for (let i = 0; i<medFacilData.length; i+=1) {
         let row = medFacilData[i];
-        medFacilities[row[0]] = row[2];
+        medFacilities[row[0]] = new MedFacilities(row[0],row[1],row[2],false);
     }
 
     if (!patients[username] && !medFacilities[username]) {
-        return 'fail';
+        return ['fail',null];
     } else if (patients[username]) {
-        if (patients[username] !== password)
-            return 'fail';
+        if (patients[username].password !== password)
+            return ['fail',null];
         else {
-            return 'patient';
+            return ['patient',patients[username]];
         }
     } else if (medFacilities[username]) {
-        if (medFacilities[username] !== password)
-            return 'fail';
+        if (medFacilities[username].password !== password)
+            return ['fail', null];
         else {
-            return 'medicalFacility';
+            return ['medicalFacility',medFacilities[username]];
         }
     }
 }
@@ -109,7 +109,7 @@ async function authenticate(username, password) {
 app.post('/authenticate', async (req, res) => {
     console.log(req.body);
     const { username, password } = req.body;
-    const loggedIn = await authenticate(username, password);
+    const [loggedIn, user] = await authenticate(username, password);
     console.log(loggedIn);
 
     if (loggedIn == 'fail'){
@@ -123,6 +123,7 @@ app.post('/authenticate', async (req, res) => {
         res.status(200).send({
             msg: 'Login successfull!',
             userType: loggedIn,
+            user: user
         });
     }
 });
@@ -151,7 +152,6 @@ app.post('/addUser', (req, res) =>  {
 
 app.get('/current-session', (req, res) => {
     let sess = req.session;
-    console.log(sess.username);
     if(sess.username) {
         return res.send(true);
     }
@@ -212,4 +212,24 @@ function getToken() {
 
 function getClient() {
     return new Web3Storage({ token: getToken() })
+}
+
+class Patients {
+    constructor(HCNumber, name, surname, email, password,isPatient) {
+        this.HCNumber = HCNumber;
+        this.name = name;
+        this.surname = surname;
+        this.email = email;
+        this.password = password;
+        this.isPatient = isPatient;
+    }
+}
+
+class MedFacilities {
+    constructor(orgNumber, name, password,isPatient) {
+        this.orgNumber = orgNumber;
+        this.name = name;
+        this.password = password;
+        this.isPatient = isPatient;
+    }
 }

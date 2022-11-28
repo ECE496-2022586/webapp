@@ -13,9 +13,8 @@ function Login () {
     useEffect(() => {
          axios.get('/current-session').then(({data}) => {
           setAuth(data);
-          console.log(auth);
         })
-      }, [])
+      })
 
     if (!auth) {
         const authenticate = async (e) => {
@@ -25,11 +24,11 @@ function Login () {
             
             const res = await axios.post('/authenticate', { username, password });
             if(res.status === 200) {
-                user = username;
+                user = res.data.user;
                 if (res.data.userType === 'patient')
                     navigate('/PDashboard');
                 else
-                navigate('/MFDashboard');
+                    navigate('/MFDashboard');
             }
         }
         return (
@@ -77,23 +76,7 @@ function Login () {
             </div>
         )
     } else {
-        return(
-            <div className="login">
-                <Header />
-                <Box style={{
-                        backgroundColor: 'transparent',
-                        color: '#7e9f38',
-                        minHeight: 300,
-                        width: 300,
-                        borderRadius: 10,
-                        fontSize: 15,
-                        fontFamily: 'Quicksand',
-                        textAlign: 'center',
-                        marginLeft: 560,
-                        marginTop: 100,
-                }}></Box>
-            </div>
-        )
+        navigate('/');
     }
   }
    
