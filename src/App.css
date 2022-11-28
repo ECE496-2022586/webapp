@@ -86,6 +86,17 @@ a {
   color: #7e9f38;
 }
 
+input[type=submit] {
+  padding:5px 15px; 
+  color: #efefef;
+  background:#7e9f38;
+  font-family: 'Quicksand';
+  border: solid #7e9f38;
+  cursor:pointer;
+  -webkit-border-radius: 5px;
+  border-radius: 5px; 
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

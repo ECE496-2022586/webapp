@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import './App.css';
 import { Login } from './Login';
 import Home from './Home';
-import UploadPage from './UploadPage';
+import { UploadPage } from './UploadPage';
 import PatientDashboard from './PatientDash';
 import MedicalFacilityDashboard from './MedicalFacilityDash';
 import NewUser from './NewUser';

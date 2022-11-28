@@ -1,72 +1,82 @@
+import React, {useState, useEffect} from "react";
+import { useForm } from "react-hook-form";
+import Box from './Box';
+import Header from './Header';
+import { CircularProgress} from '@mui/material';
 
-import React, { useState } from "react";
-import Box from "./Box";
-import Header from "./Header";
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-  
 function UploadPage() {
-    const navigate = useNavigate();
-    const [file, setFile] = useState(null);
-    const [name, setName] = useState("");
-    const [status, setStatus] = useState('');
+    const { register, handleSubmit } = useForm();
+    const [state, setState ] = useState([]);
+    const [buffer, setBuffer] = useState(false);
+    const [clicked,setClicked]= useState(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        let formData = new FormData();
-        formData.append('fileName', name);
-        formData.append('file', file);
+    useEffect(() => {   
+        if (!clicked) return;
+         getLink()
+    },[state]);
 
-        setStatus('uploading...');
-        console.log('uploading ');
-
-        
-        const res = await axios({
-            method: 'post',
-            url: '/upload',
-            data: formData,
-            headers: {
-                "Content-Type": "multipart/form-data",
-            }
-        });
-        if(res.status === 200){
-            setStatus(res.data.link);
-            navigate('/');
+    const getLink = async () => {
+        const res = await fetch("/getlink", {method: 'GET'}).then((res) => res.json());
+        if(res.link) {
+            setState(res.link)
+            console.log(state);
+            setBuffer(false);
+            setClicked(false);
+        } 
+        else if(clicked) {
+            setBuffer(true);
+        } else {
+            setState(['No links']);
         }
-        navigate('/');
-        
-        console.log('axios : ' + res);
-        return res.data
+    };  
 
-    }
-    
-    return(
-        <div className='upload-page'>
-            <Header/>
+    const onSubmit = async (data) => {
+        const formData = new FormData();
+        formData.append("file", data.file[0]);
+        formData.append('fileName', data.fileName)
+        setClicked(true);
+        setBuffer(true);
+        const res = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+        }).then((res) => res.json());
+        setState(res.link)
+    };
+
+    return (
+        <div className="uploadpage">
+            <Header />
             <Box style={{
-                width: 700,
-                wordWrap: true,
-                fontSize: 25,
-                fontFamily: 'Quicksand',
-                textAlign: 'center',
-                marginTop: 100,
-                marginLeft: 360,
-                }}>
-                    <div>
-                        <form action="/upload" onSubmit={handleSubmit}>
-                            <label>Filename</label>
-                            <input type="text" name="fileName" onChange={(e) => setName(e.target.value)} value={name} required/>
-                            <br/><br/>
-                            <label>Upload file</label>
-                            <input type="file" name="file" onChange={(e) => setFile(e.target.files[0])} required/>
-                            <br/><br/>
-                            <input type="submit" value="Submit"/>
-                        </form>     
-                        {status && <h4>{status}</h4>}
-                    </div>
+                    backgroundColor: 'transparent',
+                    color: '#7e9f38',
+                    minHeight: 300,
+                    width: 300,
+                    borderRadius: 10,
+                    fontSize: 15,
+                    fontFamily: 'Quicksand',
+                    textAlign: 'center',
+                    marginLeft: 560,
+                    marginTop: 100,
+            }}>
+                <div className="upload">
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        {/* <TextField id="outlined-basic" label="File name" variant="outlined" {...register("fileName")} required/> */}
+                        <input type="text" name="fileName" {...register("fileName")} placeholder='File name' required/> 
+                        <input type="file" {...register("file")} required/> 
+                        <input type="submit"/>
+                    </form>
+                    <input type="button" value="View uploads" onClick={getLink}/> 
+                    { buffer ? <CircularProgress /> : 
+                    <h4> 
+                        {state.map(data => (
+                            <li key={data}> {data}</li>
+                        ))}
+                    </h4>
+                    }
+                </div>
             </Box>
         </div>
     );
 }
 
-export default UploadPage
+export { UploadPage };

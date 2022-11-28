@@ -11,6 +11,8 @@ const redis = require('redis');
 const connectRedis = require('connect-redis');
 const express = require('express');
 
+const LocalStorage = require('node-localstorage').LocalStorage;
+
 const app = express();
 const PORT = 5000;
 
@@ -51,6 +53,7 @@ app.use(function (req, res, next) {
 app.use(fileUpload());
 app.use(express.json());
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(express.static("src/view/"));
 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
@@ -119,6 +122,7 @@ app.post('/authenticate', async (req, res) => {
     } else {
         req.session.username = username;
         req.session.password = password;
+        req.session.links = []
         console.log(req.session)
         res.status(200).send({
             msg: 'Login successfull!',
@@ -165,10 +169,12 @@ app.get('/logout',(req,res) => {
             console.log(err);
             return res.status(500).send(err);
         }
+        localStorage.clear();
         res.status(200).send({});
     });
 
 });
+const localStorage = new LocalStorage('./scratch');
 
 app.post('/upload', (req, res) =>  {
     console.log(req.files);
@@ -188,22 +194,34 @@ app.post('/upload', (req, res) =>  {
             if (err) console.log(err);
         });
 
-        const link = getLink(fileHash,fileName);
+        const link = await getLink(fileHash,fileName);
+        localStorage.setItem('link',link);
+        var links = req.session.links || [];  
+        links.push(link);
         // listUploads();
         console.log(link);
-        res.status(200).send({msg: 'File uploaded!', link: link});
+        return res.status(200).send({msg: 'File uploaded!', link: link});
     })
+});
+
+app.get('/getLink', (req,res) => {
+    if (localStorage.getItem('link')) {
+        const link = localStorage.getItem('link');
+        console.log(req.session);
+        return res.status(200).send({link: req.session.links});
+    }
+    return res.status(200).send({link: null});
 });
 
 async function addFile(fileName, filePath) {
     // Pack files into a CAR and send to web3.storage
-    const files = await getFilesFromPath(filePath)
-    const fileHash = await client.put(files)
+    const file = await getFilesFromPath(filePath)
+    const fileHash = await client.put(file)
     return fileHash
 }
 
-function getLink(fileHash, fileName) {
-    return "https://"+fileHash+".ipfs.w3s.link/"+fileName
+async function getLink(fileHash, fileName) {
+    return "https://"+fileHash+".ipfs.w3s.link/"+fileName;
 }
 
 function getToken() {
