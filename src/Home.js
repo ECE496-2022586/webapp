@@ -1,6 +1,6 @@
-import React from "react";
-import Box from "./Box";
-import Header from "./Header";
+import React from 'react';
+import Box from './Box.js';
+import Header from './Header.js';
   
 function Home() {
     return(

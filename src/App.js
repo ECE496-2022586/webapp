@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import './App.css';
-import { Login } from './Login';
-import Home from './Home';
-import { UploadPage } from './UploadPage';
-import PatientDashboard from './PatientDash';
-import MedicalFacilityDashboard from './MedicalFacilityDash';
-import NewUser from './NewUser';
+import { Login } from './Login.js';
+import Home from './Home.js';
+import { UploadPage } from './UploadPage.js';
+import PatientDashboard from './PatientDash.js';
+import MedicalFacilityDashboard from './MedicalFacilityDash.js';
+import NewPatient from './NewPatient.js'
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
         {/* <Route path="/how-to" element={<HowTo />}/> */}
         <Route path="/PDashboard" element={<PatientDashboard />}/>
         <Route path="/MFDashboard" element={<MedicalFacilityDashboard />}/>
-        <Route path="/new-user" element={<NewUser />}/>
+        <Route path="/new-patient" element={<NewPatient />}/>
       </Routes>
     </Router>
   );

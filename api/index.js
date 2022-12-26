@@ -1,36 +1,35 @@
-// import authenticate from '../src/Authenticate';
-const { Web3Storage, getFilesFromPath } = require('web3.storage');
-const fileUpload = require('express-fileupload');
-const fs = require("fs");
-const { parse } = require("csv-parse");
-const getStream = require('get-stream');
-const bodyParser = require('body-parser');
-const fastcsv = require('fast-csv');
-const session = require('express-session');
-const redis = require('redis');
-const connectRedis = require('connect-redis');
-const express = require('express');
+import { Web3Storage, getFilesFromPath } from 'web3.storage';
+import fileUpload from 'express-fileupload';
+import fs from 'fs';
+import bodyParser from 'body-parser';
+import session from 'express-session';
+import redis from 'redis';
+import connectRedis from 'connect-redis';
+import express from 'express';
+import nodeLocalStorage from 'node-localstorage';
+const LocalStorage = nodeLocalStorage.LocalStorage;
 
-const LocalStorage = require('node-localstorage').LocalStorage;
+import { Patients, MedFacilities } from '../public/types.js';
+import pgClient from './database.js';
 
 const app = express();
 const PORT = 5000;
 
-const RedisStore = connectRedis(session)
-const redisClient = redis.createClient({
-    legacyMode: true 
-})
-redisClient.connect().catch(console.error);
-redisClient.on('error', function (err) {
-    console.log('Could not establish a connection with redis. ' + err);
-});
-redisClient.on('connect', function (err) {
-    console.log('Connected to redis successfully');
-});
+// const RedisStore = connectRedis(session)
+// const redisClient = redis.createClient({
+//     legacyMode: true 
+// })
+// redisClient.connect().catch(console.error);
+// redisClient.on('error', function (err) {
+//     console.log('Could not establish a connection with redis. ' + err);
+// });
+// redisClient.on('connect', function (err) {
+//     console.log('Connected to redis successfully');
+// });
 
 app.use(
     session({
-      store: new RedisStore({ client: redisClient }),
+    //   store: new RedisStore({ client: redisClient }),
       saveUninitialized: true,
       secret: "ssshhhhh",
       resave: false,
@@ -71,49 +70,42 @@ app.listen(
 );
 
 const client = getClient();
+pgClient.connect();
 
-async function authenticate(username, password) {
+async function authenticatePatient(username, password) {
     console.log('usa', username);
     console.log('pass', password);
-    let patients = {};
-    let medFacilities = {};
 
-    const patientParseStream = parse({delimiter: ',', from_line: 2});
-    const patientData = await getStream.array(fs.createReadStream("../src/Patients.csv").pipe(patientParseStream));
-    for (let i = 0; i<patientData.length; i+=1) {
-        let row = patientData[i];
-        patients[row[0]] = new Patients(row[0],row[1],row[2],row[3],row[4],true);
-    }
-
-    const medParseStream = parse({delimiter: ',', from_line: 2});
-    const medFacilData = await getStream.array(fs.createReadStream("../src/MedicalFacilities.csv").pipe(medParseStream));
-    for (let i = 0; i<medFacilData.length; i+=1) {
-        let row = medFacilData[i];
-        medFacilities[row[0]] = new MedFacilities(row[0],row[1],row[2],false);
-    }
-
-    if (!patients[username] && !medFacilities[username]) {
+    const rows = await pgClient.query('SELECT health_card_number, first_name, password FROM public."Patients" WHERE health_card_number=$1', [username]);
+    console.log(rows);
+    if (!rows.rows.length) {
         return ['fail',null];
-    } else if (patients[username]) {
-        if (patients[username].password !== password)
-            return ['fail',null];
-        else {
-            return ['patient',patients[username]];
-        }
-    } else if (medFacilities[username]) {
-        if (medFacilities[username].password !== password)
-            return ['fail', null];
-        else {
-            return ['medicalFacility',medFacilities[username]];
-        }
+    } else if (password == rows.rows[0].password) {
+        return ['patient', rows.rows[0].first_name];
+    } else {
+        return ['fail',null];
     }
 }
 
-app.post('/authenticate', async (req, res) => {
+async function authenticateMedFacility(username, password) {
+    console.log('usa', username);
+    console.log('pass', password);
+
+    const rows = await pgClient.query('SELECT institute_id, name, password FROM public."Health_Providers" WHERE institute_id=$1', [username]);
+    if (!rows.rows.length) {
+        return ['fail',null];
+    } else if (password == rows.rows[0].password) {
+        return ['medicalFacility', rows.rows[0].name];
+    } else {
+        return ['fail',null];
+    }
+}
+
+app.post('/authenticatePatient', async (req, res) => {
     console.log(req.body);
     const { username, password } = req.body;
-    const [loggedIn, user] = await authenticate(username, password);
-    console.log(loggedIn);
+    const [loggedIn, user] = await authenticatePatient(username, password);
+    console.log(loggedIn, user);
 
     if (loggedIn == 'fail'){
         res.status(403).send({
@@ -132,26 +124,47 @@ app.post('/authenticate', async (req, res) => {
     }
 });
 
-app.post('/addUser', (req, res) =>  {
+app.post('/authenticateMedFacility', async (req, res) => {
+    console.log(req.body);
+    const { username, password } = req.body;
+    const [loggedIn, user] = await authenticateMedFacility(username, password);
+    console.log(loggedIn);
+
+    if (loggedIn == 'fail'){
+        res.status(403).send({
+            msg: 'Institute ID or password is incorrect.',
+        });
+    } else {
+        req.session.username = username;
+        req.session.password = password;
+        req.session.links = []
+        console.log(req.session)
+        res.status(200).send({
+            msg: 'Login successfull!',
+            userType: loggedIn,
+            user: user
+        });
+    }
+});
+
+app.post('/addPatient', async (req, res) =>  {
     console.log(req.body);
     const { name, lastName, email, HCNumber, password } = req.body;
     console.log(name, lastName, email, HCNumber, password);
       
-    const data = [{
+    const data = [
         HCNumber,
         name,
         lastName,
         email,
         password,
-    }];
+    ];
 
-    const ws = fs.createWriteStream("../src/Patients.csv", {flags: 'a'});
-    fastcsv
-        .write(data, { headers: false })
-        .pipe(ws);
-    // writer.pipe(fs.createWriteStream('../src/Patients.csv', {flags: 'a'}));
-    // writer.write(data, { headers: false });
-    res.status(200).send({});
+    const rows = await pgClient.query('INSERT INTO public."Patients" VALUES ($1, $2, $3, $4, $5)', data);
+    if (rows.rowCount == 1)
+        res.status(200).send({});
+    else
+        res.status(403).send({});
 });
 
 app.get('/current-session', (req, res) => {
@@ -230,24 +243,4 @@ function getToken() {
 
 function getClient() {
     return new Web3Storage({ token: getToken() })
-}
-
-class Patients {
-    constructor(HCNumber, name, surname, email, password,isPatient) {
-        this.HCNumber = HCNumber;
-        this.name = name;
-        this.surname = surname;
-        this.email = email;
-        this.password = password;
-        this.isPatient = isPatient;
-    }
-}
-
-class MedFacilities {
-    constructor(orgNumber, name, password,isPatient) {
-        this.orgNumber = orgNumber;
-        this.name = name;
-        this.password = password;
-        this.isPatient = isPatient;
-    }
 }

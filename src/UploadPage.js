@@ -1,7 +1,7 @@
-import React, {useState, useEffect} from "react";
-import { useForm } from "react-hook-form";
-import Box from './Box';
-import Header from './Header';
+import React, {useState, useEffect} from 'react';
+import { useForm } from 'react-hook-form';
+import Box from './Box.js';
+import Header from './Header.js';
 import { CircularProgress} from '@mui/material';
 
 function UploadPage() {

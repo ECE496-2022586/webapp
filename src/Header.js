@@ -1,9 +1,8 @@
-import { React, useState, useEffect} from "react";
-import { Link } from 'react-router-dom';
-import Box from "./Box";
-import { useNavigate } from 'react-router-dom';
+import { React, useState, useEffect} from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import Box from './Box.js';
 import axios from 'axios';
-import { user } from './Login';
+import { user } from './Login.js';
 
 function NavBar() {
     const [auth, setAuth] = useState(null);

@@ -1,5 +1,5 @@
-import React from "react";
-import Box from "./Box";
+import React from 'react';
+import Box from './Box.js';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,14 +25,14 @@ function NewUser() {
             console.log('Your password is not long enough:(');
         
         console.log(name, lastName, email, cEmail, HCNumber, password, cPassword);
-        const res = await axios.post('/addUser', { name, lastName, email, HCNumber, password });
+        const res = await axios.post('/addPatient', { name, lastName, email, HCNumber, password });
         if (res.status === 200) {
             console.log('You are my strange addiction');
             navigate('/login');
         }
     }
     return (
-        <div className='new-user'>
+        <div className='new-patient'>
             <h1 style={{fontFamily: 'Quicksand', color: '#0a5f42', marginLeft:50, marginTop:50}}> Perosnal Information</h1>
             <Box style={{
                 color: 'black',
@@ -70,11 +70,11 @@ function NewUser() {
                 </div>
                 <div className='pass' style={{fontFamily: 'Quicksand', marginLeft:-300, marginTop:0}}>
                     <h3 style={{marginLeft:-145, marginBottom:-10}}>Password</h3>
-                    <input style={{backgroundColor:'white', fontSize:20, padding:5, textAlign:'left'}} placeholder='e.g Password12345?' required />
+                    <input type='password' style={{backgroundColor:'white', fontSize:20, padding:5, textAlign:'left'}} placeholder='e.g Password12345?' required />
                 </div>
                 <div className='cpass' style={{fontFamily: 'Quicksand', marginLeft:300, marginTop:-102}}>
                     <h3 style={{marginLeft:-70, marginBottom:-10}}>Confirm Password</h3>
-                    <input style={{backgroundColor:'white', fontSize:20, padding:5, textAlign:'left'}} placeholder='e.g Password12345?' required />
+                    <input type='password' style={{backgroundColor:'white', fontSize:20, padding:5, textAlign:'left'}} placeholder='e.g Password12345?' required />
                 </div>
             </Box>
             <button className='join' style={{marginLeft:550, backgroundColor:'#0a5f42', borderRadius:10, width: 100, textAlign:'center', padding: 10}} onClick={addNewUser}>Join!</button>
