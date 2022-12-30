@@ -8,10 +8,6 @@
     width: inherit;
     height: inherit;
 
-    &.hover-trigger:hover {
-      transform: rotateY(180deg);
-    }
-
     &.showBack {
       transform: rotateX(180deg);
     }
@@ -27,6 +23,10 @@
       &.front {
         transform: rotateX(0);
         border: none;
+      }
+
+      &.front:hover {
+        opacity:0.75;
       }
   
       &.back {

@@ -62,7 +62,7 @@ function UploadPage() {
                     <form onSubmit={handleSubmit(onSubmit)}>
                         {/* <TextField id="outlined-basic" label="File name" variant="outlined" {...register("fileName")} required/> */}
                         <input type="text" name="fileName" {...register("fileName")} placeholder='File name' required/> 
-                        <input type="file" {...register("file")} required/> 
+                        <input type="file" {...register("file")} style={{marginLeft:-50}} required/> 
                         <input type="submit"/>
                     </form>
                     <input type="button" value="View uploads" onClick={getLink}/> 

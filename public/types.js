@@ -1,21 +1,20 @@
-class Patients {
-    constructor(HCNumber, name, surname, email, password,isPatient) {
+class Patient {
+    constructor(HCNumber, name, requests, surname='', email='', password='') {
         this.HCNumber = HCNumber;
         this.name = name;
+        this.requests = requests;
         this.surname = surname;
         this.email = email;
         this.password = password;
-        this.isPatient = isPatient;
     }
 }
 
-class MedFacilities {
-    constructor(orgNumber, name, password,isPatient) {
-        this.orgNumber = orgNumber;
+class MedFacility {
+    constructor(instituteID, name, password='') {
+        this.instituteID = instituteID;
         this.name = name;
         this.password = password;
-        this.isPatient = isPatient;
     }
 }
 
-export { Patients, MedFacilities };
+export { Patient, MedFacility };

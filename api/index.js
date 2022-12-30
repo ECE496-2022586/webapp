@@ -9,27 +9,27 @@ import express from 'express';
 import nodeLocalStorage from 'node-localstorage';
 const LocalStorage = nodeLocalStorage.LocalStorage;
 
-import { Patients, MedFacilities } from '../public/types.js';
+import { Patient, MedFacility } from '../public/types.js';
 import pgClient from './database.js';
 
 const app = express();
 const PORT = 5000;
 
-// const RedisStore = connectRedis(session)
-// const redisClient = redis.createClient({
-//     legacyMode: true 
-// })
-// redisClient.connect().catch(console.error);
-// redisClient.on('error', function (err) {
-//     console.log('Could not establish a connection with redis. ' + err);
-// });
-// redisClient.on('connect', function (err) {
-//     console.log('Connected to redis successfully');
-// });
+const RedisStore = connectRedis(session)
+const redisClient = redis.createClient({
+    legacyMode: true 
+})
+redisClient.connect().catch(console.error);
+redisClient.on('error', function (err) {
+    console.log('Could not establish a connection with redis. ' + err);
+});
+redisClient.on('connect', function (err) {
+    console.log('Connected to redis successfully');
+});
 
 app.use(
     session({
-    //   store: new RedisStore({ client: redisClient }),
+      store: new RedisStore({ client: redisClient }),
       saveUninitialized: true,
       secret: "ssshhhhh",
       resave: false,
@@ -76,12 +76,12 @@ async function authenticatePatient(username, password) {
     console.log('usa', username);
     console.log('pass', password);
 
-    const rows = await pgClient.query('SELECT health_card_number, first_name, password FROM public."Patients" WHERE health_card_number=$1', [username]);
-    console.log(rows);
-    if (!rows.rows.length) {
+    const results = await pgClient.query('SELECT health_card_number, first_name, password, requests FROM public."Patients" WHERE health_card_number=$1', [username]);
+    if (!results.rows.length) {
         return ['fail',null];
-    } else if (password == rows.rows[0].password) {
-        return ['patient', rows.rows[0].first_name];
+    } else if (password == results.rows[0].password) {
+        const patient = new Patient(username, results.rows[0].first_name, results.rows[0].requests);
+        return ['patient', patient];
     } else {
         return ['fail',null];
     }
@@ -91,21 +91,42 @@ async function authenticateMedFacility(username, password) {
     console.log('usa', username);
     console.log('pass', password);
 
-    const rows = await pgClient.query('SELECT institute_id, name, password FROM public."Health_Providers" WHERE institute_id=$1', [username]);
-    if (!rows.rows.length) {
+    const results = await pgClient.query('SELECT institute_id, name, password FROM public."Health_Providers" WHERE institute_id=$1', [username]);
+    if (!results.rows.length) {
         return ['fail',null];
-    } else if (password == rows.rows[0].password) {
-        return ['medicalFacility', rows.rows[0].name];
+    } else if (password == results.rows[0].password) {
+        const medFacility = new MedFacility(username, results.rows[0].name);
+        return ['medicalFacility', medFacility];
     } else {
         return ['fail',null];
     }
+}
+
+async function search(HCNumber) {
+    const results = await pgClient.query('SELECT * from public."Patients" WHERE health_card_number=$1', [HCNumber]);
+    return results.rows;
+}
+
+async function insertRequest(HCNumber, institute_id) {
+    const results = await pgClient.query('UPDATE public."Patients" SET requests=array_append(requests, $1) WHERE health_card_number=$2', [institute_id, HCNumber]);
+    return results;
+}
+
+async function getInstitutionNameFromID(ids) {
+    let map = new Map();
+    for (let i = 0; i<ids.length; i++) {
+        const results = await pgClient.query('SELECT name from public."Health_Providers" WHERE institute_id=$1', [ids[i]]);
+        if (results.rowCount == 1){
+            map.set(ids[i],results.rows[0].name);
+        }
+    }
+    return map;
 }
 
 app.post('/authenticatePatient', async (req, res) => {
     console.log(req.body);
     const { username, password } = req.body;
     const [loggedIn, user] = await authenticatePatient(username, password);
-    console.log(loggedIn, user);
 
     if (loggedIn == 'fail'){
         res.status(403).send({
@@ -128,7 +149,6 @@ app.post('/authenticateMedFacility', async (req, res) => {
     console.log(req.body);
     const { username, password } = req.body;
     const [loggedIn, user] = await authenticateMedFacility(username, password);
-    console.log(loggedIn);
 
     if (loggedIn == 'fail'){
         res.status(403).send({
@@ -150,7 +170,6 @@ app.post('/authenticateMedFacility', async (req, res) => {
 app.post('/addPatient', async (req, res) =>  {
     console.log(req.body);
     const { name, lastName, email, HCNumber, password } = req.body;
-    console.log(name, lastName, email, HCNumber, password);
       
     const data = [
         HCNumber,
@@ -160,11 +179,55 @@ app.post('/addPatient', async (req, res) =>  {
         password,
     ];
 
-    const rows = await pgClient.query('INSERT INTO public."Patients" VALUES ($1, $2, $3, $4, $5)', data);
-    if (rows.rowCount == 1)
+    const results = await pgClient.query('INSERT INTO public."Patients" VALUES ($1, $2, $3, $4, $5)', data);
+    if (results.rowCount == 1)
         res.status(200).send({});
     else
         res.status(403).send({});
+});
+
+app.post('/search', async (req, res) => {
+    console.log(req.body);
+    const { HCNumber } = req.body;
+    const user = await search(HCNumber);
+
+    if (!user || user.length != 1){
+        res.status(403).send({
+            msg: 'User does not exist.',
+        });
+    } else {
+        res.status(200).send({
+            msg: 'User Found!',
+            user: user[0]
+        });
+    }
+});
+
+app.post('/requestAccess', async (req, res) => {
+    console.log(req.body);
+    const { HCNumber } = req.body;
+    const update = await insertRequest(HCNumber, req.session.username)
+    if(update.rowCount == 1) {
+        res.status(200).send({
+            msg: 'Request Sent!',
+        });
+    } else {
+        res.status(403).send({
+            msg: 'Update unsuccessful.',
+        });
+    }
+});
+
+app.post('/getInstitutionNameFromID', async (req, res) => {
+    console.log(req.body);
+    const { ids } = req.body;
+    const requestsMap = await getInstitutionNameFromID(ids);
+    var obj = Object.fromEntries(requestsMap);
+    var jsonString = JSON.stringify(obj);
+    res.status(200).send({
+        msg: 'Got names!',
+        requestsString: jsonString,
+    });
 });
 
 app.get('/current-session', (req, res) => {

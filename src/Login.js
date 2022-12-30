@@ -7,6 +7,7 @@ import axios from 'axios';
 import FlipCard from './FlipCard.js';
 
 let user;
+let requestsString;
 
 function Login () {
     const [auth, setAuth] = useState(null);
@@ -38,6 +39,10 @@ function Login () {
             const res = await axios.post('/authenticatePatient', { username, password });
             if(res.status === 200) {
                 user = res.data.user;
+                if(user.requests.length) {
+                    const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.requests });
+                    if(res2.status === 200) requestsString = res2.data.requestsString;
+                }
                 navigate('/PDashboard');
             }
         }
@@ -202,4 +207,4 @@ function Login () {
     }
   }
    
-export { Login, user };
+export { Login, user, requestsString };

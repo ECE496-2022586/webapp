@@ -25,12 +25,12 @@ function NavBar() {
     let loginButton;
     if (!auth) {
       loginButton = <Link to="/login">
-                    <menu-button
+                    <button
                     className="home-button"
-                    type="button"
+                    type="menu-button"
                     >
                         Login
-                    </menu-button>
+                    </button>
                 </Link>
     } else {
         loginButton = <button className="logout-button" type="menu-button" onClick={logout}> Logout </button>;
@@ -39,12 +39,12 @@ function NavBar() {
 
     if(user && !user.isPatient) {
         upload  =   <Link to='/uploadpage'>
-                        <menu-button
+                        <button
                             className="home-button"
-                            type="button"
+                            type="menu-button"
                         >
                             Upload
-                        </menu-button>
+                        </button>
                     </Link> 
     }
     return(
@@ -62,20 +62,20 @@ function NavBar() {
               marginTop: -35,
             }}>
                 <Link to='/'>
-                    <menu-button
+                    <button
                         className="home-button"
-                        type="button"
+                        type="menu-button"
                     >
                         Home
-                    </menu-button>
+                    </button>
                 </Link> 
                 <Link to='/how-to'>
-                    <menu-button
+                    <button
                         className="home-button"
-                        type="button"
+                        type="menu-button"
                     >
                         How-to
-                    </menu-button>
+                    </button>
                 </Link>   
                 {loginButton}
                 {upload}
