@@ -121,7 +121,7 @@ function Login () {
                         <form>
                             <input type='username' name='username' placeholder='health card number' required />
                             <input type='password' name='password' placeholder='password' required />
-                            <button className="login-button" type="menu-button" style={{fontSize:20, width: 220, marginLeft:10, padding:5}} onClick={authenticatePatient}> Login </button>
+                            <button className="login-button" type="menu" style={{fontSize:20, width: 220, marginLeft:10, padding:5}} onClick={authenticatePatient}> Login </button>
                             <a style={{marginLeft:25, marginRight:25}} href="/new-patient">New User? Create an account</a>
                         </form>
                     </div>
@@ -145,7 +145,7 @@ function Login () {
                         <form>
                             <input type='username' name='username' placeholder='institute id' required />
                             <input type='password' name='password' placeholder='password' required />
-                            <button className="login-button" type="menu-button" style={{fontSize:20, width: 220, marginLeft:10, padding:5, backgroundColor: '#609339'}} onClick={authenticateMedFacility}> Login </button>
+                            <button className="login-button" type="menu" style={{fontSize:20, width: 220, marginLeft:10, padding:5, backgroundColor: '#609339'}} onClick={authenticateMedFacility}> Login </button>
                             <a style={{marginLeft:25, marginRight:25}} href="/new-mf">New User? Create an account</a>
                         </form>
                     </div>
@@ -169,7 +169,7 @@ function Login () {
                         <form>
                             <input type='username' name='username' placeholder='institute id' required />
                             <input type='password' name='password' placeholder='password' required />
-                            <button className="login-button" type="menu-button" style={{fontSize:20, width: 220, marginLeft:10, padding:5, backgroundColor:'#0a5f42'}}> Login </button>
+                            <button className="login-button" type="dark-green-button" style={{fontSize:20, width: 220, marginLeft:10, padding:5}}> Login </button>
                             <a style={{marginLeft:25, marginRight:25}} href="/new-lab">New User? Create an account</a>
                         </form>
                     </div>

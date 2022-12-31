@@ -107,8 +107,8 @@ async function search(HCNumber) {
     return results.rows;
 }
 
-async function insertRequest(HCNumber, institute_id) {
-    const results = await pgClient.query('UPDATE public."Patients" SET requests=array_append(requests, $1) WHERE health_card_number=$2', [institute_id, HCNumber]);
+async function insertRequest(HCNumber, instituteID) {
+    const results = await pgClient.query('UPDATE public."Patients" SET requests=array_append(requests, $1) WHERE health_card_number=$2', [instituteID, HCNumber]);
     return results;
 }
 
@@ -121,6 +121,11 @@ async function getInstitutionNameFromID(ids) {
         }
     }
     return map;
+}
+
+async function denyRequest(HCNumber, instituteID) {
+    const results = await pgClient.query('UPDATE public."Patients" SET requests=array_remove(requests, $1) WHERE health_card_number=$2', [instituteID, HCNumber]);
+    return results;
 }
 
 app.post('/authenticatePatient', async (req, res) => {
@@ -206,7 +211,8 @@ app.post('/search', async (req, res) => {
 app.post('/requestAccess', async (req, res) => {
     console.log(req.body);
     const { HCNumber } = req.body;
-    const update = await insertRequest(HCNumber, req.session.username)
+    const instituteID = req.session.username;
+    const update = await insertRequest(HCNumber, instituteID);
     if(update.rowCount == 1) {
         res.status(200).send({
             msg: 'Request Sent!',
@@ -228,6 +234,21 @@ app.post('/getInstitutionNameFromID', async (req, res) => {
         msg: 'Got names!',
         requestsString: jsonString,
     });
+});
+
+app.post('/denyRequest', async (req, res) => {
+    console.log(req.body);
+    const { HCNumber, instituteID } = req.body;
+    const update = await denyRequest(HCNumber, instituteID);
+    if(update.rowCount == 1) {
+        res.status(200).send({
+            msg: 'Deny Sent!',
+        });
+    } else {
+        res.status(403).send({
+            msg: 'Update unsuccessful.',
+        });
+    }
 });
 
 app.get('/current-session', (req, res) => {

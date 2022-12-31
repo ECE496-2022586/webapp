@@ -108,7 +108,7 @@ function MedicalFacilityDashboard() {
           marginTop: -20,
           }}>
               <input style={{border: '2px solid grey', fontSize: 20, textAlign: 'left', width: 500, padding: 3}} placeholder='Patient Health Card Number' required />
-              <button onClick={search} style={{width: 90, textAlign:'center', padding: 5, fontSize:20, marginLeft:10}} className="search-button" type="menu-button"> Search </button>
+              <button onClick={search} style={{width: 90, textAlign:'center', padding: 5, fontSize:20, marginLeft:10}} className="search-button" type="button"> Search </button>
         </Box>
         <SearchResultTable />
       </div>
