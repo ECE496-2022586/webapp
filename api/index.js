@@ -191,6 +191,29 @@ app.post('/addPatient', async (req, res) =>  {
         res.status(403).send({});
 });
 
+app.post('/addMFL', async (req, res) =>  {
+    console.log(req.body);
+    const { name, instituteID, password, userType } = req.body;
+      
+    const data = [
+        instituteID,
+        name,
+        password,
+    ];
+
+    let results;
+    if(userType == 'Laboratory') {
+        results = await pgClient.query('INSERT INTO public."Labs" VALUES ($1, $2, $3)', data);
+    } else {
+        results = await pgClient.query('INSERT INTO public."Health_Providers" VALUES ($1, $2, $3)', data);
+    }
+
+    if (results && results.rowCount == 1)
+        res.status(200).send({});
+    else
+        res.status(403).send({});
+});
+
 app.post('/search', async (req, res) => {
     console.log(req.body);
     const { HCNumber } = req.body;

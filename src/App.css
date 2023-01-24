@@ -154,3 +154,9 @@ button[type=btn-close] {
   border: 0;
   opacity: .7;
 }
+
+select {
+  font-family: 'Quicksand';
+  font-size: 18px;
+}
+

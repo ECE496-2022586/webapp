@@ -146,7 +146,7 @@ function Login () {
                             <input type='username' name='username' placeholder='institute id' required />
                             <input type='password' name='password' placeholder='password' required />
                             <button className="login-button" type="menu" style={{fontSize:20, width: 220, marginLeft:10, padding:5, backgroundColor: '#609339'}} onClick={authenticateMedFacility}> Login </button>
-                            <a style={{marginLeft:25, marginRight:25}} href="/new-mf">New User? Create an account</a>
+                            <a style={{marginLeft:25, marginRight:25}} href="/new-mfl">New User? Create an account</a>
                         </form>
                     </div>
                 </Box>
@@ -170,7 +170,7 @@ function Login () {
                             <input type='username' name='username' placeholder='institute id' required />
                             <input type='password' name='password' placeholder='password' required />
                             <button className="login-button" type="dark-green-button" style={{fontSize:20, width: 220, marginLeft:10, padding:5}}> Login </button>
-                            <a style={{marginLeft:25, marginRight:25}} href="/new-lab">New User? Create an account</a>
+                            <a style={{marginLeft:25, marginRight:25}} href="/new-mfl">New User? Create an account</a>
                         </form>
                     </div>
                 </Box>
