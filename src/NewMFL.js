@@ -1,11 +1,46 @@
-import React from 'react';
+import { React, useState } from 'react';
 import Box from './Box.js';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header.js';
+import { Modal } from 'react-bootstrap';
 
 function NewMFL() {
+    const [showSuccessPopup, setSuccessPopup] = useState(false);
     const navigate = useNavigate();
+
+    const redirectToLogin = () => {
+        setSuccessPopup(false);
+        navigate('/login');
+    }
+
+    const SuccessPopUp = (props) => {
+        if (showSuccessPopup) {
+            console.log('accept');
+            return(
+            <Modal centered {...props}>
+                <Box style={{
+                backgroundColor: 'white',
+                color: 'black',
+                border: 'solid #ACC578',
+                minHeight: 50,
+                width: 500,
+                fontSize: 20,
+                fontFamily: 'Quicksand',
+                textAlign: 'center',
+                padding: 20,
+                marginLeft: 385,
+                marginTop: 300,
+                marginBottom: 50,
+                }}>
+                    <h4 style={{marginTop:20}}>Your account was successfuly created!</h4>
+                    <button style={{width: 90, textAlign:'center', padding: 5, fontSize:20, marginLeft:10}} className="access-button" type="button" onClick={redirectToLogin}> OK </button>
+                </Box>
+            </Modal>
+            );
+        }
+    }
+
     async function addNewMFL(e) {
         const mainDiv = e.target.parentElement.children[2];
         const mainDivInputs = mainDiv.getElementsByTagName('input');
@@ -31,7 +66,7 @@ function NewMFL() {
         const res = await axios.post('/addMFL', { name, instituteID, password, userType });
         if (res.status === 200) {
             console.log('You are my strange addiction');
-            navigate('/login');
+            setSuccessPopup(true);
         }
     }
     return (
@@ -107,6 +142,7 @@ function NewMFL() {
                     <li>Welcome to HealthChainON, we're happy to have you here!</li>
                 </ul>
             </Box>
+            <SuccessPopUp show={showSuccessPopup} onHide={() => setSuccessPopup(false)}/>
         </div>
     )
 }
