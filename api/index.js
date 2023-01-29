@@ -15,21 +15,21 @@ import pgClient from './database.js';
 const app = express();
 const PORT = 5000;
 
-const RedisStore = connectRedis(session)
-const redisClient = redis.createClient({
-    legacyMode: true 
-})
-redisClient.connect().catch(console.error);
-redisClient.on('error', function (err) {
-    console.log('Could not establish a connection with redis. ' + err);
-});
-redisClient.on('connect', function (err) {
-    console.log('Connected to redis successfully');
-});
+// const RedisStore = connectRedis(session)
+// const redisClient = redis.createClient({
+//     legacyMode: true 
+// })
+// redisClient.connect().catch(console.error);
+// redisClient.on('error', function (err) {
+//     console.log('Could not establish a connection with redis. ' + err);
+// });
+// redisClient.on('connect', function (err) {
+//     console.log('Connected to redis successfully');
+// });
 
 app.use(
     session({
-      store: new RedisStore({ client: redisClient }),
+    //   store: new RedisStore({ client: redisClient }),
       saveUninitialized: true,
       secret: "ssshhhhh",
       resave: false,
@@ -78,12 +78,12 @@ async function authenticatePatient(username, password) {
 
     const results = await pgClient.query('SELECT health_card_number, first_name, password, requests FROM public."Patients" WHERE health_card_number=$1', [username]);
     if (!results.rows.length) {
-        return ['fail',null];
+        return null;
     } else if (password == results.rows[0].password) {
         const patient = new Patient(username, results.rows[0].first_name, results.rows[0].requests);
-        return ['patient', patient];
+        return patient;
     } else {
-        return ['fail',null];
+        return null;
     }
 }
 
@@ -93,12 +93,12 @@ async function authenticateMedFacility(username, password) {
 
     const results = await pgClient.query('SELECT institute_id, name, password FROM public."Health_Providers" WHERE institute_id=$1', [username]);
     if (!results.rows.length) {
-        return ['fail',null];
+        return null;
     } else if (password == results.rows[0].password) {
         const medFacility = new MedFacility(username, results.rows[0].name);
-        return ['medicalFacility', medFacility];
+        return medFacility;
     } else {
-        return ['fail',null];
+        return null;
     }
 }
 
@@ -131,9 +131,9 @@ async function denyRequest(HCNumber, instituteID) {
 app.post('/authenticatePatient', async (req, res) => {
     console.log(req.body);
     const { username, password } = req.body;
-    const [loggedIn, user] = await authenticatePatient(username, password);
+    const patient = await authenticatePatient(username, password);
 
-    if (loggedIn == 'fail'){
+    if (patient == null){
         res.status(403).send({
             msg: 'Health card number or password is incorrect.',
         });
@@ -144,8 +144,7 @@ app.post('/authenticatePatient', async (req, res) => {
         console.log(req.session)
         res.status(200).send({
             msg: 'Login successfull!',
-            userType: loggedIn,
-            user: user
+            user: patient,
         });
     }
 });
@@ -153,9 +152,9 @@ app.post('/authenticatePatient', async (req, res) => {
 app.post('/authenticateMedFacility', async (req, res) => {
     console.log(req.body);
     const { username, password } = req.body;
-    const [loggedIn, user] = await authenticateMedFacility(username, password);
+    const medFacility = await authenticateMedFacility(username, password);
 
-    if (loggedIn == 'fail'){
+    if (medFacility == null){
         res.status(403).send({
             msg: 'Institute ID or password is incorrect.',
         });
@@ -166,8 +165,7 @@ app.post('/authenticateMedFacility', async (req, res) => {
         console.log(req.session)
         res.status(200).send({
             msg: 'Login successfull!',
-            userType: loggedIn,
-            user: user
+            user: medFacility
         });
     }
 });
@@ -351,3 +349,5 @@ function getToken() {
 function getClient() {
     return new Web3Storage({ token: getToken() })
 }
+
+export default app;
