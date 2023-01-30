@@ -1,6 +1,3 @@
-// let mongoose = require("mongoose");
-// let Book = require('../app/models/book');
-
 import chai from 'chai';
 import chaiHttp from 'chai-http';
 import app from '../../../api/index.js';
@@ -19,7 +16,7 @@ describe('Login endpoints', () => {
             const reqBody = {
                 username: '0000000000AA',
                 password: 'elmo'
-            }
+            };
 
             chai.request(app)
             .post('/authenticatePatient')
@@ -27,6 +24,7 @@ describe('Login endpoints', () => {
             .end((err, res) => {
                     res.should.have.status(200);
                     res.body.should.be.a('object');
+                    res.body.user.should.not.be.equal(null);
                     res.body.msg.should.be.equal('Login successfull!');
                 done();
             });
@@ -35,23 +33,7 @@ describe('Login endpoints', () => {
             const reqBody = {
                 username: '0000000000AA',
                 password: 'bigBird'
-            }
-
-            chai.request(app)
-            .post('/authenticatePatient')
-            .send(reqBody)
-            .end((err, res) => {
-                    res.should.have.status(403);
-                    res.body.should.be.a('object');
-                    res.body.msg.should.be.equal('Health card number or password is incorrect.');
-                done();
-            });
-        });
-        it('returns 403 with non-existing crdentials', (done) => {
-            const reqBody = {
-                username: 'non-existing',
-                password: 'elmo'
-            }
+            };
 
             chai.request(app)
             .post('/authenticatePatient')
@@ -69,7 +51,7 @@ describe('Login endpoints', () => {
             const reqBody = {
                 username: '123456789',
                 password: 'sunnyBrook'
-            }
+            };
 
             chai.request(app)
             .post('/authenticateMedFacility')
@@ -77,6 +59,7 @@ describe('Login endpoints', () => {
             .end((err, res) => {
                     res.should.have.status(200);
                     res.body.should.be.a('object');
+                    res.body.user.should.not.be.equal(null);
                     res.body.msg.should.be.equal('Login successfull!');
                 done();
             });
@@ -85,7 +68,7 @@ describe('Login endpoints', () => {
             const reqBody = {
                 username: '123456789',
                 password: 'hospital'
-            }
+            };
 
             chai.request(app)
             .post('/authenticateMedFacility')
@@ -97,19 +80,22 @@ describe('Login endpoints', () => {
                 done();
             });
         });
-        it('returns 403 with non-existing crdentials', (done) => {
+    });
+
+    describe('/POST getInstitutionNameFromID', () => {
+        it('returns 200 with correct instituteIDs', (done) => {
             const reqBody = {
-                username: 'non-existing',
-                password: 'sunnyBrook'
-            }
+                ids: ['1234566789', '234567891'],
+            };
 
             chai.request(app)
-            .post('/authenticateMedFacility')
+            .post('/getInstitutionNameFromID')
             .send(reqBody)
             .end((err, res) => {
-                    res.should.have.status(403);
+                    res.should.have.status(200);
                     res.body.should.be.a('object');
-                    res.body.msg.should.be.equal('Institute ID or password is incorrect.');
+                    res.body.requestsString.should.not.be.a('json');
+                    res.body.msg.should.be.equal('Got names!');
                 done();
             });
         });

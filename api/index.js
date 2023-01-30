@@ -7,11 +7,20 @@ import redis from 'redis';
 import connectRedis from 'connect-redis';
 import express from 'express';
 import nodeLocalStorage from 'node-localstorage';
+import {authenticatePatient,
+        authenticateMedFacility,
+        search, 
+        insertRequest,
+        getInstitutionNameFromID, 
+        denyRequest,
+        getLink} from './helpers.js';
 const LocalStorage = nodeLocalStorage.LocalStorage;
 
-import { Patient, MedFacility } from '../public/types.js';
 import pgClient from './database.js';
+import pgClientMock from './mockDatabase.js';
+import dotenv from 'dotenv';
 
+let dbClient;
 const app = express();
 const PORT = 5000;
 
@@ -70,63 +79,21 @@ app.listen(
 );
 
 const client = getClient();
-pgClient.connect();
 
-async function authenticatePatient(username, password) {
-    console.log('usa', username);
-    console.log('pass', password);
-
-    const results = await pgClient.query('SELECT health_card_number, first_name, password, requests FROM public."Patients" WHERE health_card_number=$1', [username]);
-    if (!results.rows.length) {
-        return null;
-    } else if (password == results.rows[0].password) {
-        const patient = new Patient(username, results.rows[0].first_name, results.rows[0].requests);
-        return patient;
-    } else {
-        return null;
+dotenv.config();
+if (process.env.NODE_ENV === 'development'){
+    dbClient = pgClient;
+}
+if (process.env.NODE_ENV === 'testing'){
+    dbClient = pgClientMock;
+}
+dbClient.connect((err) => {
+    if (err) {
+        if (err !== 'Client has already been connected. You cannot reuse a client.');
+    else
+        throw new Error(err);
     }
-}
-
-async function authenticateMedFacility(username, password) {
-    console.log('usa', username);
-    console.log('pass', password);
-
-    const results = await pgClient.query('SELECT institute_id, name, password FROM public."Health_Providers" WHERE institute_id=$1', [username]);
-    if (!results.rows.length) {
-        return null;
-    } else if (password == results.rows[0].password) {
-        const medFacility = new MedFacility(username, results.rows[0].name);
-        return medFacility;
-    } else {
-        return null;
-    }
-}
-
-async function search(HCNumber) {
-    const results = await pgClient.query('SELECT * from public."Patients" WHERE health_card_number=$1', [HCNumber]);
-    return results.rows;
-}
-
-async function insertRequest(HCNumber, instituteID) {
-    const results = await pgClient.query('UPDATE public."Patients" SET requests=array_append(requests, $1) WHERE health_card_number=$2', [instituteID, HCNumber]);
-    return results;
-}
-
-async function getInstitutionNameFromID(ids) {
-    let map = new Map();
-    for (let i = 0; i<ids.length; i++) {
-        const results = await pgClient.query('SELECT name from public."Health_Providers" WHERE institute_id=$1', [ids[i]]);
-        if (results.rowCount == 1){
-            map.set(ids[i],results.rows[0].name);
-        }
-    }
-    return map;
-}
-
-async function denyRequest(HCNumber, instituteID) {
-    const results = await pgClient.query('UPDATE public."Patients" SET requests=array_remove(requests, $1) WHERE health_card_number=$2', [instituteID, HCNumber]);
-    return results;
-}
+});
 
 app.post('/authenticatePatient', async (req, res) => {
     console.log(req.body);
@@ -182,7 +149,7 @@ app.post('/addPatient', async (req, res) =>  {
         password,
     ];
 
-    const results = await pgClient.query('INSERT INTO public."Patients" VALUES ($1, $2, $3, $4, $5)', data);
+    const results = await dbClient.query('INSERT INTO public."Patients" VALUES ($1, $2, $3, $4, $5)', data);
     if (results.rowCount == 1)
         res.status(200).send({});
     else
@@ -201,9 +168,9 @@ app.post('/addMFL', async (req, res) =>  {
 
     let results;
     if(userType == 'Laboratory') {
-        results = await pgClient.query('INSERT INTO public."Labs" VALUES ($1, $2, $3)', data);
+        results = await dbClient.query('INSERT INTO public."Labs" VALUES ($1, $2, $3)', data);
     } else {
-        results = await pgClient.query('INSERT INTO public."Health_Providers" VALUES ($1, $2, $3)', data);
+        results = await dbClient.query('INSERT INTO public."Health_Providers" VALUES ($1, $2, $3)', data);
     }
 
     if (results && results.rowCount == 1)
@@ -216,6 +183,7 @@ app.post('/search', async (req, res) => {
     console.log(req.body);
     const { HCNumber } = req.body;
     const user = await search(HCNumber);
+    console.log(user);
 
     if (!user || user.length != 1){
         res.status(403).send({
@@ -234,7 +202,8 @@ app.post('/requestAccess', async (req, res) => {
     const { HCNumber } = req.body;
     const instituteID = req.session.username;
     const update = await insertRequest(HCNumber, instituteID);
-    if(update.rowCount == 1) {
+    console.log(update);
+    if(update && update.rowCount == 1) {
         res.status(200).send({
             msg: 'Request Sent!',
         });
@@ -261,7 +230,7 @@ app.post('/denyRequest', async (req, res) => {
     console.log(req.body);
     const { HCNumber, instituteID } = req.body;
     const update = await denyRequest(HCNumber, instituteID);
-    if(update.rowCount == 1) {
+    if(update && update.rowCount == 1) {
         res.status(200).send({
             msg: 'Deny Sent!',
         });
@@ -293,6 +262,20 @@ app.get('/logout',(req,res) => {
 
 });
 const localStorage = new LocalStorage('./scratch');
+async function addFile(fileName, filePath) {
+    // Pack files into a CAR and send to web3.storage
+    const file = await getFilesFromPath(filePath)
+    const fileHash = await client.put(file)
+    return fileHash
+}
+
+function getToken() {
+    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDJCMzdFZmJlZDFCNDNhZWNkRkM3RThhRjFkQTg2RkI0Y2Y1MDEwMDkiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2Njg5NjAxNzEwNDQsIm5hbWUiOiJoZWFsdGhBcHAifQ.oWtGq8EecLBhShX6nmLIaSqJUvoNUH8d0bAugvWa4i0";
+}
+
+function getClient() {
+    return new Web3Storage({ token: getToken() })
+}
 
 app.post('/upload', (req, res) =>  {
     console.log(req.files);
@@ -330,24 +313,5 @@ app.get('/getLink', (req,res) => {
     }
     return res.status(200).send({link: null});
 });
-
-async function addFile(fileName, filePath) {
-    // Pack files into a CAR and send to web3.storage
-    const file = await getFilesFromPath(filePath)
-    const fileHash = await client.put(file)
-    return fileHash
-}
-
-async function getLink(fileHash, fileName) {
-    return "https://"+fileHash+".ipfs.w3s.link/"+fileName;
-}
-
-function getToken() {
-    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDJCMzdFZmJlZDFCNDNhZWNkRkM3RThhRjFkQTg2RkI0Y2Y1MDEwMDkiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2Njg5NjAxNzEwNDQsIm5hbWUiOiJoZWFsdGhBcHAifQ.oWtGq8EecLBhShX6nmLIaSqJUvoNUH8d0bAugvWa4i0";
-}
-
-function getClient() {
-    return new Web3Storage({ token: getToken() })
-}
 
 export default app;

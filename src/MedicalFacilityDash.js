@@ -11,10 +11,9 @@ function MedicalFacilityDashboard() {
 
   const requestAccess = async (e) => {
     const HCNumber = e.target.parentElement.parentElement.children[0].textContent;
-    console.log(HCNumber);
+
     const res = await axios.post('/requestAccess', { HCNumber });
     if(res.status === 200) {
-      console.log('REQUEST MF');
       setRequested(true);
     }
   }
