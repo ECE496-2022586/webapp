@@ -11,33 +11,42 @@ let requestsString;
 
 function Login () {
     const [auth, setAuth] = useState(null);
+    const [loginError, setLoginError] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
-         axios.get('/current-session').then(({data}) => {
-          setAuth(data);
+        axios.get('/current-session').then(({data}) => {
+            setAuth(data);
         })
-      })
+    });
 
     if (!auth) {
         const authenticateMedFacility = async (e) => {
             e.preventDefault();
+            setLoginError('');
             const username = e.target.parentElement[0].value;
             const password = e.target.parentElement[1].value;
             
-            const res = await axios.post('/authenticateMedFacility', { username, password });
-            if(res.status === 200) {
+            const res = await axios.post('/authenticateMedFacility', { username, password }).catch((err) => {
+                setLoginError(err.response.data.msg);
+            });
+        
+            if(res && res.status === 200) {
                 user = res.data.user;
                 navigate('/MFDashboard');
             }
         }
         const authenticatePatient = async (e) => {
             e.preventDefault();
+            setLoginError('');
             const username = e.target.parentElement[0].value;
             const password = e.target.parentElement[1].value;
             
-            const res = await axios.post('/authenticatePatient', { username, password });
-            if(res.status === 200) {
+            const res = await axios.post('/authenticatePatient', { username, password }).catch((err) => {
+                setLoginError(err.response.data.msg);
+            });
+
+            if(res && res.status === 200) {
                 user = res.data.user;
                 if(user.requests.length) {
                     const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.requests });
@@ -57,7 +66,7 @@ function Login () {
                         fontSize: 20,
                         fontFamily: 'Quicksand',
                         textAlign: 'center',
-                        marginLeft: 290,
+                        marginLeft: 310,
                         marginTop: 150,
                         padding: 60,
                 }}>
@@ -77,7 +86,7 @@ function Login () {
                         fontSize: 20,
                         fontFamily: 'Quicksand',
                         textAlign: 'center',
-                        marginLeft: 590,
+                        marginLeft: 610,
                         marginTop: 150,
                         padding: 60,
                 }}>
@@ -96,7 +105,7 @@ function Login () {
                     fontSize: 20,
                     fontFamily: 'Quicksand',
                     textAlign: 'center',
-                    marginLeft: 890,
+                    marginLeft: 910,
                     marginTop: 150,
                     padding: 60,
             }}>
@@ -114,7 +123,7 @@ function Login () {
                     fontSize: 15,
                     fontFamily: 'Quicksand',
                     textAlign: 'center',
-                    marginLeft: 550,
+                    marginLeft: 570,
                     marginTop: 150,
                 }}>
                     <div className='login-form'>
@@ -138,7 +147,7 @@ function Login () {
                     fontSize: 15,
                     fontFamily: 'Quicksand',
                     textAlign: 'center',
-                    marginLeft: 250,
+                    marginLeft: 270,
                     marginTop: 150,
                 }}>
                     <div className='login-form'>
@@ -162,7 +171,7 @@ function Login () {
                     fontSize: 15,
                     fontFamily: 'Quicksand',
                     textAlign: 'center',
-                    marginLeft: 850,
+                    marginLeft: 870,
                     marginTop: 150,
                 }}>
                     <div className='login-form'>
@@ -179,6 +188,7 @@ function Login () {
         return (
         <div className="login">
             <Header/>
+            <h6 style={{width: '100%', marginLeft: 500, marginBottom: -50, fontFamily: 'Quicksand', fontSize:20}}>{loginError}</h6>
             <FlipCard Front={medFacilityTile} Back={medFacilitiesLogin}/>
             <FlipCard Front={patientTile} Back={patientLogin}/>
             <FlipCard Front={labTile} Back={labLogin}/>

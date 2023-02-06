@@ -58,7 +58,7 @@ function NavBar() {
               fontFamily: 'Quicksand',
               textAlign: 'center',
               padding: 10,
-              marginLeft: 350,
+              marginLeft: 360,
               marginTop: -35,
             }}>
                 <Link to='/'>
@@ -91,7 +91,7 @@ function Header() {
                 backgroundColor: '#0a5f42',
                 color: 'white',
                 minHeight: 50,
-                width: 1320,
+                width: 1330,
                 fontSize: 50,
                 fontFamily: 'Quicksand',
                 textAlign: 'center',
