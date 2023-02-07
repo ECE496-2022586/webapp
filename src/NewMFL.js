@@ -5,9 +5,52 @@ import { useNavigate } from 'react-router-dom';
 import Header from './Header.js';
 import { Modal } from 'react-bootstrap';
 
+const ERROR_MESSAGES = {
+    emptyField: 'Please ensure you have filled all fields',
+    invalidEmail: 'The email you have entered is invalid',
+    emailsDontMatch: 'Your emails don\'t match',
+    invalidPassword: 'Your password should 8 characters including numbers, lower and upper case letters, and some very special characters',
+    passwordsDontMatch: 'Your passwords don\'t match',
+    apiError: 'There was an api error',
+};
+
 function NewMFL() {
     const [showSuccessPopup, setSuccessPopup] = useState(false);
+    const [emptyField, setEmptyField] = useState(false);
+    const [invalidEmail, setInvalidEmail] = useState(false);
+    const [emailsDontMatch, setEmailsDontMatch] = useState(false);
+    const [invalidPassword, setInvalidPassword] = useState(false);
+    const [passwordsDontMatch, setPasswordsDontMatch] = useState(false);
+    const [apiError, setApiError] = useState(false);
     const navigate = useNavigate();
+
+    function resetErrors () {
+        setEmptyField(false);
+        setInvalidEmail(false);
+        setEmailsDontMatch(false);
+        setInvalidPassword(false);
+        setPasswordsDontMatch(false);
+        setApiError(false);
+    }
+
+    function Errors() {
+        let errors = [];
+
+        if (emptyField) errors.push(ERROR_MESSAGES.emptyField);
+        if (invalidEmail) errors.push(ERROR_MESSAGES.invalidEmail);
+        if (emailsDontMatch) errors.push(ERROR_MESSAGES.emailsDontMatch);
+        if (invalidPassword) errors.push(ERROR_MESSAGES.invalidPassword);
+        if (passwordsDontMatch) errors.push(ERROR_MESSAGES.passwordsDontMatch);
+        if (apiError) errors.push(ERROR_MESSAGES.apiError);
+
+        console.log(errors);
+
+        return (
+            errors.map((error) => {
+                return <h6 style={{width: '40%', marginLeft: 50, marginBottom:-15, fontFamily: 'Quicksand', fontSize:15, color: '#900C3F'}}>{error}</h6>
+            })
+        );
+    }
 
     const redirectToLogin = () => {
         setSuccessPopup(false);
@@ -42,6 +85,8 @@ function NewMFL() {
     }
 
     async function addNewMFL(e) {
+        resetErrors();
+
         const mainDiv = e.target.parentElement.children[2];
         const mainDivInputs = mainDiv.getElementsByTagName('input');
         const name = mainDivInputs[0].value;
@@ -54,25 +99,44 @@ function NewMFL() {
         const userType = mainDivSelect[0].value;
 
 
-        if(email !== cEmail)
-            console.log("Emails don't match:(");
+        if (!name.length || !email.length || !cEmail.length || !password.length || !cPassword.length) {
+            setEmptyField(true);
+            return;
+        }
+    
+        if (!/^\w+([-]?\w+)*@\w+([-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+            setInvalidEmail(true);
+            return;
+        }
 
-        if(password !== cPassword)
-            console.log("Passwords don't match:(");
-        if (password.len < 12)
-            console.log('Your password is not long enough:(');
+        if(email !== cEmail) {
+            setEmailsDontMatch(true);
+            return;
+        }
+
+        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#%^&])(?=.{8,})/.test(password)) {
+            setInvalidPassword(true);
+            return;   
+        }
+    
+        if (password !== cPassword) {
+            setPasswordsDontMatch(true);
+            return;
+        }
         
         console.log(name, email, cEmail, instituteID, password, cPassword);
-        const res = await axios.post('/addMFL', { name, instituteID, password, userType });
-        if (res.status === 200) {
-            console.log('You are my strange addiction');
+        const res = await axios.post('/addMFL', { name, instituteID, password, userType }).catch(() => {
+            setApiError(true);
+        });
+
+        if (res.status === 200)
             setSuccessPopup(true);
-        }
     }
     return (
         <div className='new-mfl'>
             <Header />
             <h1 style={{fontFamily: 'Quicksand', color: '#0a5f42', marginLeft:50, marginTop:70}}> Institution Information</h1>
+            <Errors/>
             <Box style={{
                 color: 'black',
                 backgroundColor: '#ACC578',

@@ -140,6 +140,10 @@ app.post('/authenticateMedFacility', async (req, res) => {
 app.post('/addPatient', async (req, res) =>  {
     console.log(req.body);
     const { name, lastName, email, HCNumber, password } = req.body;
+    if (!name.length || !lastName.length || !email.length || !HCNumber.length || !password.length)
+        res.status(403).send({
+            msg: 'User was not inserted into the db successfully.'
+        });
       
     const data = [
         HCNumber,
@@ -151,9 +155,13 @@ app.post('/addPatient', async (req, res) =>  {
 
     const results = await dbClient.query('INSERT INTO public."Patients" VALUES ($1, $2, $3, $4, $5)', data);
     if (results.rowCount == 1)
-        res.status(200).send({});
+        res.status(200).send({
+            msg: 'User inserted into the db successfully.'
+        });
     else
-        res.status(403).send({});
+        res.status(403).send({
+            msg: 'User was not inserted into the db successfully.'
+        });
 });
 
 app.post('/addMFL', async (req, res) =>  {

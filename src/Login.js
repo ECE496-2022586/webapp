@@ -188,7 +188,7 @@ function Login () {
         return (
         <div className="login">
             <Header/>
-            <h6 style={{width: '100%', marginLeft: 500, marginBottom: -50, fontFamily: 'Quicksand', fontSize:20}}>{loginError}</h6>
+            <h6 style={{width: '100%', marginLeft: 500, marginBottom: -50, fontFamily: 'Quicksand', fontSize:20, color: '#900C3F'}}>{loginError}</h6>
             <FlipCard Front={medFacilityTile} Back={medFacilitiesLogin}/>
             <FlipCard Front={patientTile} Back={patientLogin}/>
             <FlipCard Front={labTile} Back={labLogin}/>
