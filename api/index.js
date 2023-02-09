@@ -10,10 +10,13 @@ import nodeLocalStorage from 'node-localstorage';
 import {authenticatePatient,
         authenticateMedFacility,
         search, 
+        searchPatientAccessList,
         insertRequest,
         getInstitutionNameFromID, 
-        denyRequest,
-        getLink} from './helpers.js';
+        removeRequest,
+        removeAccess,
+        getLink,
+        insertAccessList} from './helpers.js';
 const LocalStorage = nodeLocalStorage.LocalStorage;
 
 import pgClient from './database.js';
@@ -24,21 +27,21 @@ let dbClient;
 const app = express();
 const PORT = 5000;
 
-// const RedisStore = connectRedis(session)
-// const redisClient = redis.createClient({
-//     legacyMode: true 
-// })
-// redisClient.connect().catch(console.error);
-// redisClient.on('error', function (err) {
-//     console.log('Could not establish a connection with redis. ' + err);
-// });
-// redisClient.on('connect', function (err) {
-//     console.log('Connected to redis successfully');
-// });
+const RedisStore = connectRedis(session)
+const redisClient = redis.createClient({
+    legacyMode: true 
+})
+redisClient.connect().catch(console.error);
+redisClient.on('error', function (err) {
+    console.log('Could not establish a connection with redis. ' + err);
+});
+redisClient.on('connect', function (err) {
+    console.log('Connected to redis successfully');
+});
 
 app.use(
     session({
-    //   store: new RedisStore({ client: redisClient }),
+      store: new RedisStore({ client: redisClient }),
       saveUninitialized: true,
       secret: "ssshhhhh",
       resave: false,
@@ -107,6 +110,7 @@ app.post('/authenticatePatient', async (req, res) => {
     } else {
         req.session.username = username;
         req.session.password = password;
+        req.session.isPatient = true;
         req.session.links = []
         console.log(req.session)
         res.status(200).send({
@@ -120,6 +124,7 @@ app.post('/authenticateMedFacility', async (req, res) => {
     console.log(req.body);
     const { username, password } = req.body;
     const medFacility = await authenticateMedFacility(username, password);
+    // localStorage.setItem('currentUser', JSON.stringify(medFacility));
 
     if (medFacility == null){
         res.status(403).send({
@@ -128,6 +133,7 @@ app.post('/authenticateMedFacility', async (req, res) => {
     } else {
         req.session.username = username;
         req.session.password = password;
+        req.session.isPatient = false;
         req.session.links = []
         console.log(req.session)
         res.status(200).send({
@@ -205,6 +211,23 @@ app.post('/search', async (req, res) => {
     }
 });
 
+app.post('/searchPatientAccessList', async (req, res) => {
+    console.log("Check if MF has access...");
+    const { HCNumber } = req.body;
+    const instituteID = req.session.username;
+    const userWithAccessGrant = await searchPatientAccessList(HCNumber,instituteID);
+
+    if (userWithAccessGrant.length != 1){
+        res.status(403).send({
+            msg: 'User has not granted access.',
+        });
+    } else {
+        res.status(200).send({
+            msg: 'User has granted access!',
+        });
+    }
+});
+
 app.post('/requestAccess', async (req, res) => {
     console.log(req.body);
     const { HCNumber } = req.body;
@@ -237,7 +260,7 @@ app.post('/getInstitutionNameFromID', async (req, res) => {
 app.post('/denyRequest', async (req, res) => {
     console.log(req.body);
     const { HCNumber, instituteID } = req.body;
-    const update = await denyRequest(HCNumber, instituteID);
+    const update = await removeRequest(HCNumber, instituteID);
     if(update && update.rowCount == 1) {
         res.status(200).send({
             msg: 'Deny Sent!',
@@ -249,9 +272,48 @@ app.post('/denyRequest', async (req, res) => {
     }
 });
 
+app.post('/removeAccess', async (req, res) => {
+    console.log(req.body);
+    const { HCNumber, instituteID } = req.body;
+    const update = await removeAccess(HCNumber, instituteID);
+    if(update && update.rowCount == 1) {
+        res.status(200).send({
+            msg: 'Revoked Access!',
+        });
+    } else {
+        res.status(403).send({
+            msg: 'Update unsuccessful.',
+        });
+    }
+});
+
+app.post('/insertAccessList', async (req, res) => {
+    console.log(req.body);
+    const { HCNumber, instituteID } = req.body;
+    const update = await insertAccessList(HCNumber, instituteID);
+    const removal = await removeRequest(HCNumber, instituteID);
+    if(update && update.rowCount == 1 && removal && removal.rowCount == 1) {
+        res.status(200).send({
+            msg: 'Granted Access!',
+        });
+    } else {
+        res.status(403).send({
+            msg: 'Access grant failed.',
+        });
+    }
+});
+
 app.get('/current-session', (req, res) => {
     let sess = req.session;
     if(sess.username) {
+        return res.send(true);
+    }
+    return res.send(false);
+});
+
+app.get('/isPatient', (req, res) => {
+    let sess = req.session;
+    if(sess.isPatient) {
         return res.send(true);
     }
     return res.send(false);
@@ -286,9 +348,10 @@ function getClient() {
 }
 
 app.post('/upload', (req, res) =>  {
-    console.log(req.files);
+    // console.log(req.files);
     const file = req.files.file;
     const fileName = req.body.fileName;
+    const currentPatient = req.body.currentPatient; //use to save for a specific patient
     const filePath =  '../public/'  + fileName;
 
     file.mv(filePath, async (err)  => {

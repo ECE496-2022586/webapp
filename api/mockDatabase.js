@@ -37,7 +37,8 @@ client.add('SELECT * from public."Patients" WHERE health_card_number=$1', ['stri
             last_name: 'Donald',
             email: 'dopey.donald@gmail.com',
             password: 'elmo',
-            requests: [ '345678912' ]
+            requests: [ '345678912' ],
+            access_list: []
         }
     ],
 });

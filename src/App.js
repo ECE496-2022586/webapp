@@ -8,6 +8,7 @@ import PatientDashboard from './PatientDash.js';
 import MedicalFacilityDashboard from './MedicalFacilityDash.js';
 import NewPatient from './NewPatient.js';
 import NewMFL from './NewMFL.js';
+import { OpenPatientFile } from './OpenPatientFile.js';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         {/* <Route path="/how-to" element={<HowTo />}/> */}
         <Route path="/PDashboard" element={<PatientDashboard />}/>
         <Route path="/MFDashboard" element={<MedicalFacilityDashboard />}/>
+        <Route path="/openpatientfile" element={<OpenPatientFile />}/>
         <Route path="/new-patient" element={<NewPatient />}/>
         <Route path="/new-mfl" element={<NewMFL />}/>
       </Routes>

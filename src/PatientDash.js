@@ -1,15 +1,17 @@
 import { React, useState } from 'react';
 import Header from './Header.js';
 import Box from './Box.js';
-import { user, requestsString } from './Login.js';
+import { user, requestsString, accessListOfMfString } from './Login.js';
 import { Modal } from 'react-bootstrap';
 import axios from 'axios';
 
+// request access to patient
+// (patient->MF)=true or false 
 function PatientDashboard() {
   const [showAcceptPopup, setAcceptPopup] = useState(false);
   const [showDenyPopup, setDenyPopup] = useState(false);
   const [currentRequest, setCurrentRequest] = useState(-1);
-  let requestsMap = {};
+  let requestsMap, accessMap = {};
 
   const TableFromArray = () => {
     if (requestsString) {
@@ -36,6 +38,32 @@ function PatientDashboard() {
       );
     }
   }
+
+  const GetAccessTable = () => {
+    console.log(accessListOfMfString)
+    if (accessListOfMfString) {
+      accessMap = new Map(Object.entries(JSON.parse(accessListOfMfString)));
+      return(
+        <table style={{width:'100%'}}>
+          <tr>
+            <th></th>
+            <th>Institute ID</th>
+            <th>Name</th>
+          </tr>
+            {user.access_list.map((id) => {
+              return(
+                <tr>
+                  <td><button className="revoke-button" type="dark-green-button" style={{padding:7, fontSize:20}} onClick={() => removeAccess(id)}>Revoke</button></td>
+                  <td>{id}</td>
+                  <td>{accessMap.get(id)}</td>
+                </tr>
+              );
+            })}
+        </table>
+      );
+    }
+  }
+
   const RequestsTable = () => {
     if (user && user.requests) {
       if (user.requests.length) {
@@ -92,6 +120,15 @@ function PatientDashboard() {
     setCurrentRequest(instituteID);
   }
 
+  const removeAccess = async (id) => {
+    const instituteID = id;
+    const HCNumber = user.HCNumber;
+    const res = await axios.post('/removeAccess', { HCNumber, instituteID });
+    if(res.status === 200) {
+      accessMap.delete(instituteID);
+    }
+  }
+
   const AcceptPopUp = (props) => {
     if (showAcceptPopup) {
       console.log('accept');
@@ -114,7 +151,7 @@ function PatientDashboard() {
               <button type="btn-close" style={{marginTop:-10, marginLeft:480}} onClick={()=> setAcceptPopup(false)}>x</button>
               <h4 style={{marginTop:-20}}>Please enter your seed phrase to accept the request</h4>
               <input style={{border: '2px solid grey', fontSize: 20, textAlign: 'left', width: 400, padding: 3}} name='seed' placeholder='Seed Phrase' required />
-              <button style={{width: 90, textAlign:'center', padding: 5, fontSize:20, marginLeft:10}} className="access-button" type="button"> Accept </button>
+              <button style={{width: 90, textAlign:'center', padding: 5, fontSize:20, marginLeft:10}} className="access-button" type="button" onClick={validateSeed}> Accept </button>
         </Box>
       </Modal>
       );
@@ -160,6 +197,63 @@ function PatientDashboard() {
       // window.location.reload(false);
     }
   }
+
+  const validateSeed = async (e) => {
+    console.log(user)
+    e.preventDefault();
+    const HCNumber = user.HCNumber;
+    const instituteID = currentRequest;
+    console.log("Fake validating and instering into access table...");
+    const res = await axios.post('/insertAccessList', { HCNumber, instituteID });
+    if(res.status === 200) {
+      console.log(res);
+    }
+}
+const AccessTable = () => {
+  if (user && user.access_list) {
+    console.log("IN 1")
+    if (user.access_list.length) {
+      console.log("IN 2")
+      return (
+        <Box style={{
+          backgroundColor: 'transparent',
+          color: 'black',
+          border: 'solid #ACC578',
+          minHeight: 50,
+          width: 680,
+          fontSize: 20,
+          fontFamily: 'Quicksand',
+          textAlign: 'center',
+          padding: 20,
+          marginLeft: 350,
+          marginTop: -20,
+          marginBottom: 50,
+          }}>
+              <GetAccessTable />
+        </Box>
+      );
+    } else {
+      return (
+        <Box style={{
+          backgroundColor: 'transparent',
+          color: 'black',
+          border: 'solid #ACC578',
+          minHeight: 50,
+          width: 680,
+          fontSize: 20,
+          fontFamily: 'Quicksand',
+          textAlign: 'center',
+          padding: 20,
+          marginLeft: 350,
+          marginTop: -20,
+          marginBottom: 50,
+          }}>
+              No facility has access to your records at the moment.
+        </Box>
+      );
+    }
+  }
+}
 
   return (
     <div className="pdashboard">
@@ -210,6 +304,7 @@ function PatientDashboard() {
             Requests
       </Box>
       <RequestsTable/>
+      <AccessTable/>
       <AcceptPopUp show={showAcceptPopup} onHide={() => setAcceptPopup(false)}/>
       <DenyPopUp show={showDenyPopup} onHide={() => setDenyPopup(false)}/>
     </div>

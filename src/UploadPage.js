@@ -3,12 +3,16 @@ import { useForm } from 'react-hook-form';
 import Box from './Box.js';
 import Header from './Header.js';
 import { CircularProgress} from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function UploadPage() {
     const { register, handleSubmit } = useForm();
     const [state, setState ] = useState([]);
     const [buffer, setBuffer] = useState(false);
     const [clicked,setClicked]= useState(false);
+    const navigate = useNavigate();
+    const params = useLocation();
+    const foundUser = params.state.foundUser;
 
     useEffect(() => {   
         if (!clicked) return;
@@ -34,6 +38,8 @@ function UploadPage() {
         const formData = new FormData();
         formData.append("file", data.file[0]);
         formData.append('fileName', data.fileName)
+        console.log(foundUser)
+        formData.append('currentPatient', JSON.stringify(foundUser));
         setClicked(true);
         setBuffer(true);
         const res = await fetch("/upload", {
@@ -58,6 +64,7 @@ function UploadPage() {
                     marginLeft: 560,
                     marginTop: 100,
             }}>
+                 <button className="request-button" type="button" onClick={()=>navigate(-1)}>Back</button>
                 <div className="upload">
                     <form onSubmit={handleSubmit(onSubmit)}>
                         {/* <TextField id="outlined-basic" label="File name" variant="outlined" {...register("fileName")} required/> */}

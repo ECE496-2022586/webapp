@@ -3,10 +3,12 @@ import Header from './Header.js';
 import Box from './Box.js';
 import { user } from './Login.js';
 import axios from 'axios';
+import {Link} from 'react-router-dom';
 
 function MedicalFacilityDashboard() {
   const [showTable, setTable] = useState(false);
   let [foundUser, setFoundUser] = useState({});
+  let [userAccessButton, setUserAccessButton] = useState(false);
   const [showRequested, setRequested] = useState(false);
 
   const requestAccess = async (e) => {
@@ -19,10 +21,15 @@ function MedicalFacilityDashboard() {
   }
 
   const RequestButton = () => {
-    if(!showRequested)
-      return <button className="request-button" type="button" style={{padding:7, fontSize:20}} onClick={requestAccess}>Request</button>
-    else
-      return <button className="request-button" type="menu-button" style={{border: 'solid #ACC578', backgroundColor: 'white', color:'#ACC578', padding:7, fontSize:20}} onClick={requestAccess}>Requested</button>
+    if(userAccessButton) {
+      return  <Link to="/openpatientfile" state={{foundUser}}> <button style={{fontSize:20}}>View</button></Link>
+    } 
+    else {
+      if(!showRequested)
+        return <button className="request-button" type="button" style={{padding:7, fontSize:20}} onClick={requestAccess}>Request</button>
+      else
+        return <button className="request-button" type="menu-button" style={{border: 'solid #ACC578', backgroundColor: 'white', color:'#ACC578', padding:7, fontSize:20}} onClick={requestAccess}>Requested</button>
+      }
   }
 
   const SearchResultTable = () => {
@@ -58,6 +65,7 @@ function MedicalFacilityDashboard() {
       );
     }
   }
+
   const search = async (e) => {
     setTable(false);
     setRequested(false);
@@ -71,6 +79,10 @@ function MedicalFacilityDashboard() {
         lastName: res.data.user.last_name,
       });
       setTable(true);
+      const res2 = await axios.post('/searchPatientAccessList', { HCNumber });
+      if(res2.status === 200) {
+        setUserAccessButton(true);
+      }
     } else {
       console.log('did not found user!');
     }

@@ -8,6 +8,7 @@ import FlipCard from './FlipCard.js';
 
 let user;
 let requestsString;
+let accessListOfMfString;
 
 function Login () {
     const [auth, setAuth] = useState(null);
@@ -52,6 +53,10 @@ function Login () {
                     const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.requests });
                     if(res2.status === 200) requestsString = res2.data.requestsString;
                 }
+                if(user.access_list.length) {
+                    const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.access_list });
+                    if(res2.status === 200) accessListOfMfString = res2.data.requestsString;
+                 }
                 navigate('/PDashboard');
             }
         }
@@ -217,4 +222,4 @@ function Login () {
     }
   }
    
-export { Login, user, requestsString };
+export { Login, user, requestsString, accessListOfMfString};

@@ -7,11 +7,16 @@ import { user } from './Login.js';
 function NavBar() {
     const [auth, setAuth] = useState(null);
     const navigate = useNavigate();
+    const [isPatient, setIsPatient] = useState(null);
 
     useEffect(() => {
          axios.get('/current-session').then(({data}) => {
           setAuth(data);
         })
+
+        axios.get('/isPatient').then(({data}) => {
+            setIsPatient(data);
+          })
       }, [auth])
 
     const logout = async (e) => {
@@ -35,9 +40,22 @@ function NavBar() {
     } else {
         loginButton = <button className="logout-button" type="menu-button" onClick={logout}> Logout </button>;
     }
+
+    let dashboardButton;
+    if (auth && !isPatient) {
+        dashboardButton =   <Link to='/MFDashboard'>
+                                <button
+                                    className="home-button"
+                                    type="menu-button"
+                                >
+                                    Dashboard
+                                </button>
+                            </Link> 
+    }
+
     let upload;
 
-    if(user && !user.isPatient) {
+    if(auth && !isPatient) {
         upload  =   <Link to='/uploadpage'>
                         <button
                             className="home-button"
@@ -76,9 +94,10 @@ function NavBar() {
                     >
                         How-to
                     </button>
-                </Link>   
+                </Link> 
+                {dashboardButton}  
                 {loginButton}
-                {upload}
+                {/* {upload} */}
           </Box>
         </div>
     );
