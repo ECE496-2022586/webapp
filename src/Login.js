@@ -5,12 +5,14 @@ import Header from './Header.js';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import FlipCard from './FlipCard.js';
+import { Modal } from 'react-bootstrap';
 
 let user;
 let requestsString;
 let accessListOfMfString;
 
 function Login () {
+    const [showEncryptionKeyPopupPatient, setEncryptionKeyPopupPatient] = useState(false);
     const [auth, setAuth] = useState(null);
     const [loginError, setLoginError] = useState('');
     const navigate = useNavigate();
@@ -42,24 +44,70 @@ function Login () {
             setLoginError('');
             const username = e.target.parentElement[0].value;
             const password = e.target.parentElement[1].value;
-            
             const res = await axios.post('/authenticatePatient', { username, password }).catch((err) => {
                 setLoginError(err.response.data.msg);
             });
 
             if(res && res.status === 200) {
                 user = res.data.user;
-                if(user.requests.length) {
-                    const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.requests });
-                    if(res2.status === 200) requestsString = res2.data.requestsString;
-                }
-                if(user.access_list.length) {
-                    const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.access_list });
-                    if(res2.status === 200) accessListOfMfString = res2.data.requestsString;
-                 }
-                navigate('/PDashboard');
+                console.log(user)
+                setEncryptionKeyPopupPatient(true)
             }
         }
+
+        const EncryptionKeyPopupPatient = (props) => {
+            if (showEncryptionKeyPopupPatient) {
+              return(
+                <Modal centered {...props}>
+                  <Box style={{
+                  backgroundColor: 'white',
+                  color: 'black',
+                  border: 'solid #ACC578',
+                  minHeight: 50,
+                  width: 600,
+                  fontSize: 20,
+                  fontFamily: 'Quicksand',
+                  textAlign: 'center',
+                  padding: 20,
+                  marginLeft: 385,
+                  marginTop: 300,
+                  marginBottom: 50,
+                  }}>
+                      <button type="btn-close" style={{marginTop:-10, marginLeft:480}} onClick={()=> setEncryptionKeyPopupPatient(false)}>x</button>
+                      <h4 style={{marginTop:-20}}>Please enter your secret key to login</h4>
+                      <input style={{border: '2px solid grey', fontSize: 20, textAlign: 'left', width: 400, padding: 3}} name='seed' placeholder='Seed Phrase' required />
+                      <button style={{width: 90, textAlign:'center', padding: 5, fontSize:20, marginLeft:10}} className="access-button" type="button" onClick={validateKey}> Validate </button>
+                </Box>
+              </Modal>
+              );
+            }
+        }
+
+        const validateKey = async (e) => {
+            console.log(user)
+            e.preventDefault();
+            const seed = e.target.previousElementSibling.value;
+            const res = await axios.post('/authenticateWithLedger', { username: user.HCNumber, password: user.password, seed: seed, identity: "patient" }).catch((err) => {
+                setLoginError(err.response.data.msg);
+            });
+            if (res.status != 200) {
+                const res_logout = await axios.get('/logout');
+                if(res_logout.status === 200) {
+                    navigate('/');
+                }
+            }
+            user = res.data.user;
+            if(user.pendingRequests.length) {
+                const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.pendingRequests });
+                if(res2.status === 200) requestsString = res2.data.requestsString;
+            }
+            if(user.approvedRequests.length) {
+                const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.approvedRequests });
+                if(res2.status === 200) accessListOfMfString = res2.data.requestsString;
+            }
+            navigate('/PDashboard');
+        }
+
         const medFacilityTile = () => {
             return (
                 <Box style={{
@@ -197,6 +245,7 @@ function Login () {
             <FlipCard Front={medFacilityTile} Back={medFacilitiesLogin}/>
             <FlipCard Front={patientTile} Back={patientLogin}/>
             <FlipCard Front={labTile} Back={labLogin}/>
+            <EncryptionKeyPopupPatient show={showEncryptionKeyPopupPatient} onHide={() => setEncryptionKeyPopupPatient(false)}/>
         </div>
         );
     } else if(auth == null) {

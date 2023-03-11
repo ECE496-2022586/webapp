@@ -125,7 +125,7 @@ function NewMFL() {
         }
         
         console.log(name, email, cEmail, instituteID, password, cPassword);
-        const res = await axios.post('/addMFL', { name, instituteID, password, userType }).catch(() => {
+        const res = await axios.post('/addMFL', { name, instituteID,email, password, userType }).catch(() => {
             setApiError(true);
         });
 

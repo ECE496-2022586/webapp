@@ -1,5 +1,6 @@
 import { Web3Storage, getFilesFromPath } from 'web3.storage';
 import fileUpload from 'express-fileupload';
+import CryptoJS from "crypto-js";
 import fs from 'fs';
 import bodyParser from 'body-parser';
 import session from 'express-session';
@@ -17,11 +18,13 @@ import {authenticatePatient,
         removeAccess,
         getLink,
         insertAccessList} from './helpers.js';
+    
 const LocalStorage = nodeLocalStorage.LocalStorage;
 
 import pgClient from './database.js';
 import pgClientMock from './mockDatabase.js';
 import dotenv from 'dotenv';
+import axios from 'axios';
 
 let dbClient;
 const app = express();
@@ -99,32 +102,74 @@ dbClient.connect((err) => {
 });
 
 app.post('/authenticatePatient', async (req, res) => {
-    console.log(req.body);
+    console.log("1st step login...")
     const { username, password } = req.body;
     const patient = await authenticatePatient(username, password);
 
-    if (patient == null){
+    if (patient == null ){
         res.status(403).send({
             msg: 'Health card number or password is incorrect.',
         });
     } else {
         req.session.username = username;
-        req.session.password = password;
         req.session.isPatient = true;
         req.session.links = []
-        console.log(req.session)
         res.status(200).send({
-            msg: 'Login successfull!',
+            msg: 'Login step 1 successfull!',
             user: patient,
         });
     }
 });
 
+app.post('/authenticateWithLedger', async (req, res) => {
+    console.log("2nd step login...")
+    const { username, password, seed, identity } = req.body;
+    const organization = "hospital";
+
+    const hash = CryptoJS.SHA256(username);
+    const encryptionKey = CryptoJS.AES.encrypt(seed, hash, { mode: CryptoJS.mode.ECB }).toString();
+
+    const res_ledger = await axios.post('http://localhost:3001/login', { username, password, encryptionKey, identity, organization }).catch((err) => {
+        console.error(err)
+    });
+    let patient;
+    if (res_ledger && res_ledger.data)
+        patient = res_ledger.data.user;
+    if (patient == null ){
+        res.status(403).send({
+            msg: 'Health card number, password or secret key is incorrect.',
+        });
+    } else {
+        req.session.user = patient
+        req.session.token = res_ledger.data.token;
+        axios.defaults.headers.common['authorization'] = req.session.token;
+        res.status(200).send({
+            msg: 'Login step 2 successfull!',
+            user: patient,
+        });
+    }
+
+});
+
+app.get('/getUser', async (req,res) => {
+    console.log(req.session.user)
+    res.json(req.session.user)
+});
+
 app.post('/authenticateMedFacility', async (req, res) => {
     console.log(req.body);
     const { username, password } = req.body;
-    const medFacility = await authenticateMedFacility(username, password);
+    // const medFacility1 = await authenticateMedFacility(username, password);
     // localStorage.setItem('currentUser', JSON.stringify(medFacility));
+    const organization = "hospital";
+    const identity = "doctor";
+    const res_ledger = await axios.post('http://localhost:3001/login', { username, password, identity, organization }).catch((err) => {
+        console.error(err)
+    });
+    let medFacility;
+    if (res_ledger && res_ledger.data)
+        medFacility = res_ledger.data.user;
+    console.log("authenticating " + res_ledger.data.user)
 
     if (medFacility == null){
         res.status(403).send({
@@ -132,10 +177,10 @@ app.post('/authenticateMedFacility', async (req, res) => {
         });
     } else {
         req.session.username = username;
-        req.session.password = password;
+        req.session.token = res_ledger.data.token;
         req.session.isPatient = false;
         req.session.links = []
-        console.log(req.session)
+        axios.defaults.headers.common['authorization'] = req.session.token;
         res.status(200).send({
             msg: 'Login successfull!',
             user: medFacility
@@ -144,20 +189,30 @@ app.post('/authenticateMedFacility', async (req, res) => {
 });
 
 app.post('/addPatient', async (req, res) =>  {
-    console.log(req.body);
-    const { name, lastName, email, HCNumber, password } = req.body;
-    if (!name.length || !lastName.length || !email.length || !HCNumber.length || !password.length)
+    const { firstName, lastName, email, HCNumber, password, seed } = req.body;
+    if (!firstName.length || !lastName.length || !email.length || !HCNumber.length || !password.length)
         res.status(403).send({
             msg: 'User was not inserted into the db successfully.'
         });
       
     const data = [
         HCNumber,
-        name,
+        firstName,
         lastName,
         email,
         password,
     ];
+    const hash = CryptoJS.SHA256(HCNumber);
+    const encryptionKey = CryptoJS.AES.encrypt(seed, hash, { mode: CryptoJS.mode.ECB }).toString();
+
+    const organization = "hospital"
+    const identity = "patient"
+    const username = HCNumber
+    await axios.post('http://localhost:3001/patient', { firstName, lastName, email, username, password, encryptionKey, identity, organization }).catch((error) => {
+        res.status(403).send({
+            msg: 'User was not inserted into the db successfully.'
+        });
+    });
 
     const results = await dbClient.query('INSERT INTO public."Patients" VALUES ($1, $2, $3, $4, $5)', data);
     if (results.rowCount == 1)
@@ -172,13 +227,19 @@ app.post('/addPatient', async (req, res) =>  {
 
 app.post('/addMFL', async (req, res) =>  {
     console.log(req.body);
-    const { name, instituteID, password, userType } = req.body;
+    const { name, instituteID, email, password, userType } = req.body;
       
     const data = [
         instituteID,
         name,
         password,
     ];
+    const organization = "hospital"
+    const identity = "doctor"
+ 
+    await axios.post('http://localhost:3001/doctor', { name, email, instituteID, password, identity, organization }).catch((error) => {
+        res.status(403).send({error});
+    });
 
     let results;
     if(userType == 'Laboratory') {
@@ -194,19 +255,21 @@ app.post('/addMFL', async (req, res) =>  {
 });
 
 app.post('/search', async (req, res) => {
-    console.log(req.body);
     const { HCNumber } = req.body;
-    const user = await search(HCNumber);
-    console.log(user);
-
-    if (!user || user.length != 1){
-        res.status(403).send({
-            msg: 'User does not exist.',
+    // const user = await search(HCNumber);
+    const res_ledger = await axios.get(`http://localhost:3001/patients/${HCNumber}`).catch((err) => {
+        res.status(404).send({
+            msg: 'User does not exist. ' + err.message,
         });
-    } else {
+    });
+
+    if (res_ledger && res_ledger.status === 200) {
+        const user = res_ledger.data;
+        console.log(user)
+        console.log("Found result for "+ user.username)
         res.status(200).send({
             msg: 'User Found!',
-            user: user[0]
+            user: user
         });
     }
 });
@@ -218,7 +281,7 @@ app.post('/searchPatientAccessList', async (req, res) => {
     const userWithAccessGrant = await searchPatientAccessList(HCNumber,instituteID);
 
     if (userWithAccessGrant.length != 1){
-        res.status(403).send({
+        res.status(204).send({
             msg: 'User has not granted access.',
         });
     } else {
@@ -229,11 +292,15 @@ app.post('/searchPatientAccessList', async (req, res) => {
 });
 
 app.post('/requestAccess', async (req, res) => {
-    console.log(req.body);
-    const { HCNumber } = req.body;
+    const patient = req.body.patient;
     const instituteID = req.session.username;
-    const update = await insertRequest(HCNumber, instituteID);
-    console.log(update);
+    const update = await insertRequest(patient.username, instituteID);
+
+    const res_ledger = await axios.post(`http://localhost:3001/patients/${patient.username}/pendingRequests/${instituteID}`).catch((err) => {
+        console.error(err)
+    });
+
+    console.log("Added MF to patients requests: " + res_ledger.data.pendingRequests)
     if(update && update.rowCount == 1) {
         res.status(200).send({
             msg: 'Request Sent!',
@@ -261,6 +328,11 @@ app.post('/denyRequest', async (req, res) => {
     console.log(req.body);
     const { HCNumber, instituteID } = req.body;
     const update = await removeRequest(HCNumber, instituteID);
+
+    const res_ledger = await axios.delete(`http://localhost:3001/patients/${HCNumber}/pendingRequest/${instituteID}`).catch((err) => {
+        console.error(err)
+    });
+
     if(update && update.rowCount == 1) {
         res.status(200).send({
             msg: 'Deny Sent!',
@@ -273,10 +345,14 @@ app.post('/denyRequest', async (req, res) => {
 });
 
 app.post('/removeAccess', async (req, res) => {
-    console.log(req.body);
     const { HCNumber, instituteID } = req.body;
     const update = await removeAccess(HCNumber, instituteID);
-    if(update && update.rowCount == 1) {
+
+    const res_ledger = await axios.delete(`http://localhost:3001/patients/${HCNumber}/approvedRequests/${instituteID}`).catch((err) => {
+        console.error(err)
+    });
+    
+    if(update && update.rowCount == 1 && res_ledger.status == 200) {
         res.status(200).send({
             msg: 'Revoked Access!',
         });
@@ -288,11 +364,21 @@ app.post('/removeAccess', async (req, res) => {
 });
 
 app.post('/insertAccessList', async (req, res) => {
-    console.log(req.body);
-    const { HCNumber, instituteID } = req.body;
+    const { HCNumber, instituteID, seed } = req.body;
     const update = await insertAccessList(HCNumber, instituteID);
     const removal = await removeRequest(HCNumber, instituteID);
-    if(update && update.rowCount == 1 && removal && removal.rowCount == 1) {
+
+    const patient = await search(HCNumber);
+    const password = patient[0].password;
+
+    const hash = CryptoJS.SHA256(HCNumber);
+    const encryptionKey = CryptoJS.AES.encrypt(seed, hash, { mode: CryptoJS.mode.ECB }).toString();
+
+    const res_ledger = await axios.post(`http://localhost:3001/patients/${HCNumber}/approvedRequests/${instituteID}`, { encryptionKey: encryptionKey, password: password }).catch((err) => {
+        console.error(err)
+    });
+
+    if(update && update.rowCount == 1 && removal && removal.rowCount == 1 && res_ledger.status == 200) {
         res.status(200).send({
             msg: 'Granted Access!',
         });
@@ -305,7 +391,7 @@ app.post('/insertAccessList', async (req, res) => {
 
 app.get('/current-session', (req, res) => {
     let sess = req.session;
-    if(sess.username) {
+    if(sess.token) {
         return res.send(true);
     }
     return res.send(false);
@@ -348,7 +434,6 @@ function getClient() {
 }
 
 app.post('/upload', (req, res) =>  {
-    // console.log(req.files);
     const file = req.files.file;
     const fileName = req.body.fileName;
     const currentPatient = req.body.currentPatient; //use to save for a specific patient

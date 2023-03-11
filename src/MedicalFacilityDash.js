@@ -12,9 +12,7 @@ function MedicalFacilityDashboard() {
   const [showRequested, setRequested] = useState(false);
 
   const requestAccess = async (e) => {
-    const HCNumber = e.target.parentElement.parentElement.children[0].textContent;
-
-    const res = await axios.post('/requestAccess', { HCNumber });
+    const res = await axios.post('/requestAccess', { patient: foundUser });
     if(res.status === 200) {
       setRequested(true);
     }
@@ -28,7 +26,7 @@ function MedicalFacilityDashboard() {
       if(!showRequested)
         return <button className="request-button" type="button" style={{padding:7, fontSize:20}} onClick={requestAccess}>Request</button>
       else
-        return <button className="request-button" type="menu-button" style={{border: 'solid #ACC578', backgroundColor: 'white', color:'#ACC578', padding:7, fontSize:20}} onClick={requestAccess}>Requested</button>
+        return <button className="request-button" type="menu-button" style={{border: 'solid #ACC578', backgroundColor: 'white', color:'#ACC578', padding:7, fontSize:20}} disabled="true">Requested</button>
       }
   }
 
@@ -55,7 +53,7 @@ function MedicalFacilityDashboard() {
                 <th>Request Access</th>
               </tr>
               <tr>
-                <td>{foundUser.HCNumber}</td>
+                <td>{foundUser.username}</td>
                 <td>{foundUser.firstName}</td>
                 <td>{foundUser.lastName}</td>
                 <td ><RequestButton/></td>
@@ -73,14 +71,12 @@ function MedicalFacilityDashboard() {
     const HCNumber = e.target.previousElementSibling.value;
     const res = await axios.post('/search', { HCNumber });
     if(res.status === 200) {
-      setFoundUser({
-        HCNumber: res.data.user.health_card_number,
-        firstName: res.data.user.first_name,
-        lastName: res.data.user.last_name,
-      });
-      setTable(true);
-      const res2 = await axios.post('/searchPatientAccessList', { HCNumber });
-      if(res2.status === 200) {
+      if ((res.data.user).pendingRequests.indexOf(user.username) > -1)
+        setRequested(true);
+      setFoundUser(res.data.user);
+      setTable(true); 
+      // const res2 = await axios.post('/searchPatientAccessList', { HCNumber });
+      if((user.patient).indexOf(HCNumber) > -1) {
         setUserAccessButton(true);
       }
     } else {

@@ -25,7 +25,7 @@ async function authenticatePatient(username, password) {
     if (!results.rows.length) {
         return null;
     } else if (password == results.rows[0].password) {
-        const patient = new Patient(username, results.rows[0].first_name, results.rows[0].requests, results.rows[0].access_list);
+        const patient = new Patient(username, results.rows[0].first_name, results.rows[0].requests, results.rows[0].access_list, password);
         return patient;
     } else {
         return null;

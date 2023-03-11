@@ -24,7 +24,7 @@ function PatientDashboard() {
             <th>Accept</th>
             <th>Deny</th>
           </tr>
-            {user.requests.map((id) => {
+            {user.pendingRequests.map((id) => {
               return(
                 <tr>
                   <td>{id}</td>
@@ -50,7 +50,7 @@ function PatientDashboard() {
             <th>Institute ID</th>
             <th>Name</th>
           </tr>
-            {user.access_list.map((id) => {
+            {user.approvedRequests.map((id) => {
               return(
                 <tr>
                   <td><button className="revoke-button" type="dark-green-button" style={{padding:7, fontSize:20}} onClick={() => removeAccess(id)}>Revoke</button></td>
@@ -65,8 +65,8 @@ function PatientDashboard() {
   }
 
   const RequestsTable = () => {
-    if (user && user.requests) {
-      if (user.requests.length) {
+    if (user && user.pendingRequests) {
+      if (user.pendingRequests.length) {
         return (
           <Box style={{
             backgroundColor: 'transparent',
@@ -122,7 +122,7 @@ function PatientDashboard() {
 
   const removeAccess = async (id) => {
     const instituteID = id;
-    const HCNumber = user.HCNumber;
+    const HCNumber = user.username;
     const res = await axios.post('/removeAccess', { HCNumber, instituteID });
     if(res.status === 200) {
       accessMap.delete(instituteID);
@@ -189,7 +189,7 @@ function PatientDashboard() {
 
   const confirmDenial = async () => {
     setDenyPopup(false);
-    const HCNumber = user.HCNumber;
+    const HCNumber = user.username;
     const instituteID = currentRequest;
     const res = await axios.post('/denyRequest', { HCNumber, instituteID });
     if(res.status === 200) {
@@ -201,18 +201,19 @@ function PatientDashboard() {
   const validateSeed = async (e) => {
     console.log(user)
     e.preventDefault();
-    const HCNumber = user.HCNumber;
+    const seed = e.target.previousElementSibling.value;
+    const HCNumber = user.username;
     const instituteID = currentRequest;
-    console.log("Fake validating and instering into access table...");
-    const res = await axios.post('/insertAccessList', { HCNumber, instituteID });
+    const res = await axios.post('/insertAccessList', { HCNumber, instituteID, seed });
     if(res.status === 200) {
+      setAcceptPopup(false)
       console.log(res);
     }
 }
 const AccessTable = () => {
-  if (user && user.access_list) {
+  if (user && user.approvedRequests) {
     console.log("IN 1")
-    if (user.access_list.length) {
+    if (user.approvedRequests.length) {
       console.log("IN 2")
       return (
         <Box style={{
@@ -258,7 +259,7 @@ const AccessTable = () => {
   return (
     <div className="pdashboard">
       <Header />
-      <h2 style={{fontFamily: 'Quicksand', textAlign: 'center', marginTop: 70}}>Welcome to your dashboard {user && user.name} !</h2>
+      <h2 style={{fontFamily: 'Quicksand', textAlign: 'center', marginTop: 70}}>Welcome to your dashboard {user && user.firstName} !</h2>
       <Box style={{
         backgroundColor: '#ACC578',
         color: 'white',

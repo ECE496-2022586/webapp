@@ -93,15 +93,16 @@ function NewPatient() {
 
         const mainDiv = e.target.parentElement.children[2];
         const mainDivInputs = mainDiv.getElementsByTagName('input');
-        const name = mainDivInputs[0].value;
+        const firstName = mainDivInputs[0].value;
         const lastName = mainDivInputs[1].value;
         const email = mainDivInputs[2].value;
         const cEmail = mainDivInputs[3].value;
         const HCNumber = mainDivInputs[4].value;
         const password = mainDivInputs[5].value;
         const cPassword = mainDivInputs[6].value;
+        const seed = mainDivInputs[7].value;
 
-        if (!name.length || !lastName.length || !email.length || !cEmail.length || !HCNumber.length || !password.length || !cPassword.length) {
+        if (!firstName.length || !lastName.length || !email.length || !cEmail.length || !HCNumber.length || !password.length || !cPassword.length) {
             setEmptyField(true);
             return;
         }
@@ -131,8 +132,8 @@ function NewPatient() {
             return;
         }
         
-        console.log(name, lastName, email, cEmail, HCNumber, password, cPassword);
-        const res = await axios.post('/addPatient', { name, lastName, email, HCNumber, password }).catch(() => {
+        console.log(firstName, lastName, email, cEmail, HCNumber, password, cPassword, seed);
+        const res = await axios.post('/addPatient', { firstName, lastName, email, HCNumber, password,seed }).catch(() => {
             setApiError(true);
         });
 
@@ -185,6 +186,11 @@ function NewPatient() {
                 <div className='cpass' style={{fontFamily: 'Quicksand', marginLeft:300, marginTop:-102}}>
                     <h3 style={{marginLeft:-70, marginBottom:-10}}>Confirm Password</h3>
                     <input type='password' style={{backgroundColor:'white', fontSize:20, padding:5, textAlign:'left'}} placeholder='e.g Password12345?' required />
+                </div>
+                <div className='encryptionKey' style={{fontFamily: 'Quicksand', marginLeft:-300, marginTop:0}}>
+                    <h3 style={{marginLeft:-145, marginBottom:-10}}>Secret Key</h3>
+                    <input type='password' style={{backgroundColor:'white', fontSize:20, padding:5, textAlign:'left'}} placeholder='e.g Secret' required />
+                    <h5 style={{marginLeft:220, marginTop:-10}} > * This will be your secret value to access your files and will not be saved by us</h5>
                 </div>
             </Box>
             <button className='join' style={{marginLeft:550, backgroundColor:'#0a5f42', borderRadius:10, width: 100, textAlign:'center', padding: 10}} onClick={addNewPatient}>Join!</button>

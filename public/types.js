@@ -1,5 +1,5 @@
 class Patient {
-    constructor(HCNumber, name, requests, access_list, surname='', email='', password='') {
+    constructor(HCNumber, name, requests, access_list, password='', surname='', email='') {
         this.HCNumber = HCNumber;
         this.name = name;
         this.requests = requests;
