@@ -100,7 +100,7 @@ async function removeAccess(HCNumber, instituteID) {
     return results;
 }
 
-async function getLink(fileHash, fileName) {
+function getLink(fileHash, fileName) {
     return "https://"+fileHash+".ipfs.w3s.link/"+fileName;
 }
 

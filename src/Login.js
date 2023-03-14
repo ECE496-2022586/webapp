@@ -29,7 +29,6 @@ function Login () {
             setLoginError('');
             const username = e.target.parentElement[0].value;
             const password = e.target.parentElement[1].value;
-            
             const res = await axios.post('/authenticateMedFacility', { username, password }).catch((err) => {
                 setLoginError(err.response.data.msg);
             });

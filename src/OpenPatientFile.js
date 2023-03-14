@@ -1,13 +1,52 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import Box from './Box.js';
 import Header from './Header.js';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { CircularProgress} from '@mui/material';
+import axios from 'axios';
+import Table from "./Table.js";
 
 function OpenPatientFile(props) {
+    const [data, setData] = useState([]);
     const params= useLocation();
     const foundUser = params.state.foundUser;
     let upload = <Link to='/uploadpage' state={{foundUser}}> <button className="home-button" type="button"> Upload </button> </Link> 
+
+    useEffect(() => {
+        (async () => {
+            // will replace this to eventually get file links from ledger and then will query them from ipfs 1 by 1 to make sure they exist
+            // then will put the links in the table with the name 
+            // only when a file is clicked the /queryFileFromIPFS endpoint will be called (it is written now) to decrypt and download
+            // the file is now being downloaded in the public folder but will need to change it to either just display it or download it in another local user folder
+            const res = await axios.get("/getFilesFromLedger"); 
+            setData(res.data.files);
+        })();
+      }, []);
+    const data1 = React.useMemo(() => data)
+    console.log(data1)
+
+    const columns = useMemo( () => [
+        {
+            Header: 'Files',
+            columns: [
+            {
+                Header: "File Name",
+                accessor: "name",
+            },
+            {
+                Header: "File Link",
+                accessor: "link",
+            },
+            ],
+        },
+    ],[]
+    );
+
+    const getPatientFile = async () => {
+        await axios.get('/queryFileFromIPFS').catch((err) => {
+            console.log(err)
+        })
+    }
   
     return (
         <div className="open-patient-file">
@@ -25,6 +64,7 @@ function OpenPatientFile(props) {
                     marginLeft: 560,
                     marginTop: 100,
             }}>
+            <Table columns={columns} data={data1} />
             {upload}
             </Box>
         </div>

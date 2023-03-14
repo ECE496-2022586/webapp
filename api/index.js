@@ -1,4 +1,5 @@
 import { Web3Storage, getFilesFromPath } from 'web3.storage';
+import https from 'https';
 import fileUpload from 'express-fileupload';
 import CryptoJS from "crypto-js";
 import fs from 'fs';
@@ -433,6 +434,49 @@ function getClient() {
     return new Web3Storage({ token: getToken() })
 }
 
+app.get('/queryFileFromIPFS', async (req, res) => {
+
+    try {
+        let ipfsHash = "bafybeif4zgqaiaoslxztmfvjp5ulvvpg3hpm45s7kabdkbynvwni2fjax4";
+        let ipfsFileName = "first";
+        let downloadedFile = await retrieveFile(ipfsHash, ipfsFileName);
+        // downloadedFile = DECRYPT HEREEEEEE
+
+        fs.access(downloadedFile, function (exists) {
+            if (exists) {
+                res.writeHead(200, {
+                });
+                fs.createReadStream(downloadedFile).pipe(res);
+
+            } else {
+                res.writeHead(400, { "Content-Type": "text/plain" });
+                res.end("ERROR File does not exist");
+            }
+        });
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+async function retrieveFile(cid, fileName = "first") {
+    fileName = "../public/" + fileName+".pdf";
+    const file = fs.createWriteStream(fileName);
+    const link = getLink(cid,"first")
+    const request = https.get(link, function (response) {
+        response.pipe(file);
+    });
+    return fileName;
+  }
+
+app.get('/getFilesFromLedger', async (req, res) => {
+    const fileName = "first" // req.body.fileName
+    const cid = "bafybeif4zgqaiaoslxztmfvjp5ulvvpg3hpm45s7kabdkbynvwni2fjax4"  // req.body.cid
+    const link = getLink(cid,fileName);
+    console.log(link)
+    const files = [{link: link, name: fileName}]
+    res.status(200).send({files: files});
+})
+
 app.post('/upload', (req, res) =>  {
     const file = req.files.file;
     const fileName = req.body.fileName;
@@ -451,7 +495,7 @@ app.post('/upload', (req, res) =>  {
             if (err) console.log(err);
         });
 
-        const link = await getLink(fileHash,fileName);
+        const link = getLink(fileHash,fileName);
         localStorage.setItem('link',link);
         var links = req.session.links || [];  
         links.push(link);

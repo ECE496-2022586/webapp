@@ -161,3 +161,10 @@ select {
   font-size: 18px;
 }
 
+.myTable {
+  background: #7e9f38;
+  font-weight: bold;
+  color: white;
+  border-bottom: solid;
+}
+

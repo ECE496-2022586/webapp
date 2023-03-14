@@ -41,6 +41,7 @@
     "react-mui-fileuploader": "^0.3.0",
     "react-router-dom": "^6.4.3",
     "react-scripts": "5.0.1",
+    "react-table": "^7.8.0",
     "redis": "^4.5.1",
     "request": "^2.88.2",
     "sass": "^1.57.1",

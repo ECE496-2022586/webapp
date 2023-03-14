@@ -76,7 +76,7 @@ function MedicalFacilityDashboard() {
       setFoundUser(res.data.user);
       setTable(true); 
       // const res2 = await axios.post('/searchPatientAccessList', { HCNumber });
-      if((user.patient).indexOf(HCNumber) > -1) {
+      if(HCNumber in (user.patients)) {
         setUserAccessButton(true);
       }
     } else {
