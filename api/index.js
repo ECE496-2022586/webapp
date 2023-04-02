@@ -481,7 +481,7 @@ app.get('/getAllFilesFromLedger', async (req, res) => {
     for (let record of patient.records) {
         const link = getLink(record.hash,record.fileName);
         const mfName = await getInstitutionNameFromID(record.issuer)
-        files.push({link: link, name: record.fileName, issuer: mfName, hash: record.hash})
+        files.push({link: link, name: record.fileName, issuer: mfName, hash: record.hash, date: record.timestamp})
     }
     res.status(200).send({files: files});
 })

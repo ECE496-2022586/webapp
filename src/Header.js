@@ -7,6 +7,14 @@ function NavBar() {
     const [auth, setAuth] = useState(null);
     const navigate = useNavigate();
     const [isPatient, setIsPatient] = useState(null);
+    const [user, setUser] = useState();
+
+    useEffect(() => {
+        const loggedInUser = localStorage.getItem("user");
+        if (loggedInUser) {
+           setUser(JSON.parse(loggedInUser));
+        }
+      }, []);
 
     useEffect(() => {
          axios.get('/current-session').then(({data}) => {
@@ -53,17 +61,11 @@ function NavBar() {
                             </Link> 
     }
 
-    let upload;
+    let openPatientFile;
 
-    if(auth && !isPatient) {
-        upload  =   <Link to='/uploadpage'>
-                        <button
-                            className="home-button"
-                            type="menu-button"
-                        >
-                            Upload
-                        </button>
-                    </Link> 
+    if(auth && isPatient  && user) {
+        let foundUser = user
+        openPatientFile  =   <Link to="/openpatientfile" state={{foundUser}}> <button type="menu-button" style={{fontSize:20}}>View Records</button></Link> 
     }
     return(
       <div className='menu-bar'>
@@ -95,9 +97,9 @@ function NavBar() {
                         How-to
                     </button>
                 </Link> 
-                {dashboardButton}  
+                {dashboardButton} 
+                {openPatientFile} 
                 {loginButton}
-                {/* {upload} */}
           </Box>
         </div>
     );

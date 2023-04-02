@@ -14,16 +14,11 @@ function OpenPatientFile(props) {
 
     useEffect(() => {
         (async () => {
-            // will replace this to eventually get file links from ledger and then will query them from ipfs 1 by 1 to make sure they exist
-            // then will put the links in the table with the name 
-            // only when a file is clicked the /queryFileFromIPFS endpoint will be called (it is written now) to decrypt and download
-            // the file is now being downloaded in the public folder but will need to change it to either just display it or download it in another local user folder
             const res = await axios.get("/getAllFilesFromLedger", {params: { patient: JSON.stringify(foundUser)}}); 
             setTableData(res.data.files);
         })();
       }, []);
     const data1 = React.useMemo(() => tableData)
-    console.log(data1)
 
     const columns = useMemo( () => [
         {
@@ -43,7 +38,11 @@ function OpenPatientFile(props) {
             },
             {
                 Header: "File Hash",
-                accessor: "hash",
+                accessor: "hash"
+            },
+            {
+                Header: "Date issued",
+                accessor: "date"
             },
             ],
         },
@@ -61,21 +60,22 @@ function OpenPatientFile(props) {
     return (
         <div className="open-patient-file">
             <Header />
-            <h2 style={{fontFamily: 'Quicksand', textAlign: 'center', marginTop: 70}}>Welcome to {foundUser.firstName}'s dashboard  !</h2>
+            {/* <h2 style={{fontFamily: 'Quicksand', textAlign: 'center', marginTop: 70}}>Welcome to {foundUser.firstName}'s dashboard  !</h2> */}
             <Box style={{
                     backgroundColor: 'transparent',
                     color: '#7e9f38',
                     minHeight: 300,
-                    width: 300,
+                    width: 600,
                     borderRadius: 10,
-                    fontSize: 15,
+                    fontSize: 20,
                     fontFamily: 'Quicksand',
                     textAlign: 'center',
-                    marginLeft: 560,
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
                     marginTop: 100,
             }}>
             <Table columns={columns} data={data1} actionOnClick={getPatientFile}/>
-            {upload}
+            {foundUser.identity!='patient'? upload:null}
             </Box>
         </div>
     );

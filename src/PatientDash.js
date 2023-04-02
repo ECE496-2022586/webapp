@@ -5,8 +5,6 @@ import { Modal } from 'react-bootstrap';
 import axios from 'axios';
 import userEvent from '@testing-library/user-event';
 
-// request access to patient
-// (patient->MF)=true or false 
 function PatientDashboard() {
   const [showAcceptPopup, setAcceptPopup] = useState(false);
   const [showDenyPopup, setDenyPopup] = useState(false);
@@ -59,16 +57,16 @@ function PatientDashboard() {
       return(
         <table style={{width:'100%'}}>
           <tr>
+            {/* <th>Institute ID</th> */}
+            {/* <th>Medical Facility</th> */}
             <th></th>
-            <th>Institute ID</th>
-            <th>Name</th>
           </tr>
             {user.approvedRequests.map((id) => {
               return(
                 <tr>
-                  <td><button className="revoke-button" type="dark-green-button" style={{padding:7, fontSize:20}} onClick={() => removeAccess(id)}>Revoke</button></td>
-                  <td>{id}</td>
                   <td>{accessMap.get(id)}</td>
+                  <td><button className="revoke-button" type="dark-green-button" style={{padding:7, fontSize:20}} onClick={() => removeAccess(id)}>Revoke Access</button></td>
+                  {/* <td>{id}</td> */}
                 </tr>
               );
             })}
@@ -285,24 +283,9 @@ const AccessTable = () => {
         marginLeft: 250,
         marginTop: 70,
         }}>
-            Access Records
+            Requests
       </Box>
-      <Box style={{
-        backgroundColor: 'transparent',
-        color: '#ACC578',
-        border: 'solid #ACC578',
-        minHeight: 50,
-        width: 680,
-        fontSize: 20,
-        fontFamily: 'Quicksand',
-        textAlign: 'center',
-        padding: 15,
-        marginLeft: 350,
-        marginTop: -20,
-        }}>
-            <input style={{border: '2px solid grey', fontSize: 20, textAlign: 'left', width: 500, padding: 3}} name='seed' placeholder='Seed Phrase' required />
-            <button style={{width: 90, textAlign:'center', padding: 5, fontSize:20, marginLeft:10}} className="access-button" type="button"> Access </button>
-      </Box>
+      <RequestsTable/>
       <Box style={{
         backgroundColor: '#ACC578',
         color: 'white',
@@ -315,9 +298,8 @@ const AccessTable = () => {
         marginLeft: 250,
         marginTop: 70,
         }}>
-            Requests
+          Your Medical Facilities
       </Box>
-      <RequestsTable/>
       <AccessTable/>
       <AcceptPopUp show={showAcceptPopup} onHide={() => setAcceptPopup(false)}/>
       <DenyPopUp show={showDenyPopup} onHide={() => setDenyPopup(false)}/>
