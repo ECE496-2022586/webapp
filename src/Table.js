@@ -1,7 +1,7 @@
 import React from "react";
 import { useTable } from "react-table";
 
-export default function Table({ columns, data }) {
+export default function Table({ columns, data, actionOnClick }) {
   const {
     getTableProps,
     getTableBodyProps,
@@ -27,7 +27,7 @@ export default function Table({ columns, data }) {
           return (
             <tr {...row.getRowProps()}>
               {row.cells.map(cell => {
-                return <td {...cell.getCellProps()}>{cell.render("Cell")}</td>;
+                return <td onClick={() => actionOnClick(cell?.row?.original)} {...cell.getCellProps()}>{cell.render("Cell")}</td>;
               })}
             </tr>
           );

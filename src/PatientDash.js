@@ -1,9 +1,9 @@
-import { React, useState } from 'react';
+import { React, useState, useEffect} from 'react';
 import Header from './Header.js';
 import Box from './Box.js';
-import { user, requestsString, accessListOfMfString } from './Login.js';
 import { Modal } from 'react-bootstrap';
 import axios from 'axios';
+import userEvent from '@testing-library/user-event';
 
 // request access to patient
 // (patient->MF)=true or false 
@@ -11,6 +11,19 @@ function PatientDashboard() {
   const [showAcceptPopup, setAcceptPopup] = useState(false);
   const [showDenyPopup, setDenyPopup] = useState(false);
   const [currentRequest, setCurrentRequest] = useState(-1);
+  const [user, setUser] = useState();
+  const [accessListOfMfString, setAccessListOfMfString] = useState("")
+  const [requestsString, setRequestsString] = useState("")
+
+  useEffect(() => {
+    const loggedInUser = localStorage.getItem("user");
+    if (loggedInUser) {
+       setUser(JSON.parse(loggedInUser));
+       setAccessListOfMfString(localStorage.getItem('accessListOfMfString'))
+       setRequestsString(localStorage.getItem('requestsString'))
+    }
+  }, []);
+
   let requestsMap, accessMap = {};
 
   const TableFromArray = () => {
@@ -150,7 +163,7 @@ function PatientDashboard() {
           }}>
               <button type="btn-close" style={{marginTop:-10, marginLeft:480}} onClick={()=> setAcceptPopup(false)}>x</button>
               <h4 style={{marginTop:-20}}>Please enter your seed phrase to accept the request</h4>
-              <input style={{border: '2px solid grey', fontSize: 20, textAlign: 'left', width: 400, padding: 3}} name='seed' placeholder='Seed Phrase' required />
+              <input type="password" style={{border: '2px solid grey', fontSize: 20, textAlign: 'left', width: 400, padding: 3}} name='seed' placeholder='Seed Phrase' required />
               <button style={{width: 90, textAlign:'center', padding: 5, fontSize:20, marginLeft:10}} className="access-button" type="button" onClick={validateSeed}> Accept </button>
         </Box>
       </Modal>

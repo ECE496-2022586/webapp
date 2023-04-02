@@ -1,7 +1,6 @@
-import { React, useState } from 'react';
+import { React, useState, useEffect } from 'react';
 import Header from './Header.js';
 import Box from './Box.js';
-import { user } from './Login.js';
 import axios from 'axios';
 import {Link} from 'react-router-dom';
 
@@ -10,6 +9,14 @@ function MedicalFacilityDashboard() {
   let [foundUser, setFoundUser] = useState({});
   let [userAccessButton, setUserAccessButton] = useState(false);
   const [showRequested, setRequested] = useState(false);
+  const [user, setUser] = useState();
+
+  useEffect(() => {
+    const loggedInUser = localStorage.getItem("user");
+    if (loggedInUser) {
+       setUser(JSON.parse(loggedInUser));
+    }
+  }, []);
 
   const requestAccess = async (e) => {
     const res = await axios.post('/requestAccess', { patient: foundUser });
@@ -26,7 +33,7 @@ function MedicalFacilityDashboard() {
       if(!showRequested)
         return <button className="request-button" type="button" style={{padding:7, fontSize:20}} onClick={requestAccess}>Request</button>
       else
-        return <button className="request-button" type="menu-button" style={{border: 'solid #ACC578', backgroundColor: 'white', color:'#ACC578', padding:7, fontSize:20}} disabled="true">Requested</button>
+        return <button className="request-button" type="menu-button" style={{border: 'solid #ACC578', backgroundColor: 'white', color:'#ACC578', padding:7, fontSize:20}} disabled={true}>Requested</button>
       }
   }
 
@@ -86,7 +93,7 @@ function MedicalFacilityDashboard() {
   return (
       <div className="mfdashboard">
         <Header />
-        <h2 style={{fontFamily: 'Quicksand', textAlign: 'center', marginTop: 70}}>Welcome to your dashboard {user && user.name} !</h2>
+        <h2 style={{fontFamily: 'Quicksand', textAlign: 'center', marginTop: 70}}>Welcome to your dashboard {user && user.firstName} !</h2>
         <Box style={{
           backgroundColor: '#ACC578',
           color: 'white',

@@ -7,7 +7,7 @@ import axios from 'axios';
 import Table from "./Table.js";
 
 function OpenPatientFile(props) {
-    const [data, setData] = useState([]);
+    const [tableData, setTableData] = useState([]);
     const params= useLocation();
     const foundUser = params.state.foundUser;
     let upload = <Link to='/uploadpage' state={{foundUser}}> <button className="home-button" type="button"> Upload </button> </Link> 
@@ -18,11 +18,11 @@ function OpenPatientFile(props) {
             // then will put the links in the table with the name 
             // only when a file is clicked the /queryFileFromIPFS endpoint will be called (it is written now) to decrypt and download
             // the file is now being downloaded in the public folder but will need to change it to either just display it or download it in another local user folder
-            const res = await axios.get("/getFilesFromLedger"); 
-            setData(res.data.files);
+            const res = await axios.get("/getAllFilesFromLedger", {params: { patient: JSON.stringify(foundUser)}}); 
+            setTableData(res.data.files);
         })();
       }, []);
-    const data1 = React.useMemo(() => data)
+    const data1 = React.useMemo(() => tableData)
     console.log(data1)
 
     const columns = useMemo( () => [
@@ -37,13 +37,23 @@ function OpenPatientFile(props) {
                 Header: "File Link",
                 accessor: "link",
             },
+            {
+                Header: "Issuer",
+                accessor: "issuer",
+            },
+            {
+                Header: "File Hash",
+                accessor: "hash",
+            },
             ],
         },
     ],[]
     );
 
-    const getPatientFile = async () => {
-        await axios.get('/queryFileFromIPFS').catch((err) => {
+    const getPatientFile = async (rowData) => {
+        const link = rowData.link
+        const fileName = rowData.name
+        await axios.get('/queryFileFromIPFS',{params: {link: link, fileName: fileName, hash:rowData.hash, currentPatient: JSON.stringify(foundUser)}}).catch((err) => {
             console.log(err)
         })
     }
@@ -64,7 +74,7 @@ function OpenPatientFile(props) {
                     marginLeft: 560,
                     marginTop: 100,
             }}>
-            <Table columns={columns} data={data1} />
+            <Table columns={columns} data={data1} actionOnClick={getPatientFile}/>
             {upload}
             </Box>
         </div>

@@ -8,8 +8,6 @@ import FlipCard from './FlipCard.js';
 import { Modal } from 'react-bootstrap';
 
 let user;
-let requestsString;
-let accessListOfMfString;
 
 function Login () {
     const [showEncryptionKeyPopupPatient, setEncryptionKeyPopupPatient] = useState(false);
@@ -17,6 +15,13 @@ function Login () {
     const [loginError, setLoginError] = useState('');
     const navigate = useNavigate();
 
+    useEffect(() => {
+        const loggedInUser = localStorage.getItem("user");
+        if (loggedInUser) {
+           user = JSON.parse(loggedInUser);
+        }
+      }, []);
+    
     useEffect(() => {
         axios.get('/current-session').then(({data}) => {
             setAuth(data);
@@ -35,6 +40,8 @@ function Login () {
         
             if(res && res.status === 200) {
                 user = res.data.user;
+                localStorage.setItem('user', JSON.stringify(res.data.user))
+                console.log(user)
                 navigate('/MFDashboard');
             }
         }
@@ -49,7 +56,6 @@ function Login () {
 
             if(res && res.status === 200) {
                 user = res.data.user;
-                console.log(user)
                 setEncryptionKeyPopupPatient(true)
             }
         }
@@ -74,7 +80,7 @@ function Login () {
                   }}>
                       <button type="btn-close" style={{marginTop:-10, marginLeft:480}} onClick={()=> setEncryptionKeyPopupPatient(false)}>x</button>
                       <h4 style={{marginTop:-20}}>Please enter your secret key to login</h4>
-                      <input style={{border: '2px solid grey', fontSize: 20, textAlign: 'left', width: 400, padding: 3}} name='seed' placeholder='Seed Phrase' required />
+                      <input type="password" style={{border: '2px solid grey', fontSize: 20, textAlign: 'left', width: 400, padding: 3}} name='seed' placeholder='Seed Phrase' required />
                       <button style={{width: 90, textAlign:'center', padding: 5, fontSize:20, marginLeft:10}} className="access-button" type="button" onClick={validateKey}> Validate </button>
                 </Box>
               </Modal>
@@ -83,7 +89,6 @@ function Login () {
         }
 
         const validateKey = async (e) => {
-            console.log(user)
             e.preventDefault();
             const seed = e.target.previousElementSibling.value;
             const res = await axios.post('/authenticateWithLedger', { username: user.HCNumber, password: user.password, seed: seed, identity: "patient" }).catch((err) => {
@@ -96,14 +101,17 @@ function Login () {
                 }
             }
             user = res.data.user;
+            localStorage.setItem('user',  JSON.stringify(res.data.user))
+
             if(user.pendingRequests.length) {
                 const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.pendingRequests });
-                if(res2.status === 200) requestsString = res2.data.requestsString;
+                if(res2.status === 200) localStorage.setItem('requestsString', res2.data.requestsString)
             }
             if(user.approvedRequests.length) {
                 const res2 = await axios.post('/getInstitutionNameFromID', { ids: user.approvedRequests });
-                if(res2.status === 200) accessListOfMfString = res2.data.requestsString;
+                if(res2.status === 200) localStorage.setItem('accessListOfMfString', res2.data.requestsString)
             }
+            console.log(user)
             navigate('/PDashboard');
         }
 
@@ -270,4 +278,4 @@ function Login () {
     }
   }
    
-export { Login, user, requestsString, accessListOfMfString};
+export { Login};

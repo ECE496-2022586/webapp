@@ -73,7 +73,7 @@ async function insertAccessList(HCNumber, instituteID) {
     return results;
 }
 
-async function getInstitutionNameFromID(ids) {
+async function getInstitutionNameFromIDS(ids) {
     let map = new Map();
     for (let i = 0; i<ids.length; i++) {
         const results = await dbClient.query('SELECT name from public."Health_Providers" WHERE institute_id=$1', [ids[i]]);
@@ -82,6 +82,11 @@ async function getInstitutionNameFromID(ids) {
         }
     }
     return map;
+}
+
+async function getInstitutionNameFromID(id) {
+    const result = await dbClient.query('SELECT name from public."Health_Providers" WHERE institute_id=$1', [id]);
+    return result.rows[0].name
 }
 
 async function removeRequest(HCNumber, instituteID) {
@@ -108,7 +113,8 @@ export  {authenticatePatient,
         authenticateMedFacility,
         search, 
         insertRequest,
-        getInstitutionNameFromID, 
+        getInstitutionNameFromID,
+        getInstitutionNameFromIDS, 
         removeRequest, 
         searchPatientAccessList,
         getLink,

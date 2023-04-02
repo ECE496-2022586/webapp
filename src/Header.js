@@ -2,7 +2,6 @@ import { React, useState, useEffect} from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Box from './Box.js';
 import axios from 'axios';
-import { user } from './Login.js';
 
 function NavBar() {
     const [auth, setAuth] = useState(null);
@@ -22,6 +21,7 @@ function NavBar() {
     const logout = async (e) => {
         const res = await axios.get('/logout');
         if(res.status === 200) {
+            localStorage.clear();
             navigate('/');
             window.location.reload();
         }

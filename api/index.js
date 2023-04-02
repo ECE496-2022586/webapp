@@ -1,7 +1,8 @@
-import { Web3Storage, getFilesFromPath } from 'web3.storage';
+import { Web3Storage, getFilesFromPath, File } from 'web3.storage';
 import https from 'https';
 import fileUpload from 'express-fileupload';
 import CryptoJS from "crypto-js";
+import crypto from "crypto";
 import fs from 'fs';
 import bodyParser from 'body-parser';
 import session from 'express-session';
@@ -14,6 +15,7 @@ import {authenticatePatient,
         search, 
         searchPatientAccessList,
         insertRequest,
+        getInstitutionNameFromIDS,
         getInstitutionNameFromID, 
         removeRequest,
         removeAccess,
@@ -141,9 +143,10 @@ app.post('/authenticateWithLedger', async (req, res) => {
             msg: 'Health card number, password or secret key is incorrect.',
         });
     } else {
+        console.log("2nd step login complete!")
         req.session.user = patient
         req.session.token = res_ledger.data.token;
-        axios.defaults.headers.common['authorization'] = req.session.token;
+        axios.defaults.headers.common['authorization'] = 'Bearer ' + req.session.token;
         res.status(200).send({
             msg: 'Login step 2 successfull!',
             user: patient,
@@ -158,7 +161,6 @@ app.get('/getUser', async (req,res) => {
 });
 
 app.post('/authenticateMedFacility', async (req, res) => {
-    console.log(req.body);
     const { username, password } = req.body;
     // const medFacility1 = await authenticateMedFacility(username, password);
     // localStorage.setItem('currentUser', JSON.stringify(medFacility));
@@ -170,7 +172,7 @@ app.post('/authenticateMedFacility', async (req, res) => {
     let medFacility;
     if (res_ledger && res_ledger.data)
         medFacility = res_ledger.data.user;
-    console.log("authenticating " + res_ledger.data.user)
+    console.log("authenticating mf: " + res_ledger.data.user)
 
     if (medFacility == null){
         res.status(403).send({
@@ -181,7 +183,7 @@ app.post('/authenticateMedFacility', async (req, res) => {
         req.session.token = res_ledger.data.token;
         req.session.isPatient = false;
         req.session.links = []
-        axios.defaults.headers.common['authorization'] = req.session.token;
+        axios.defaults.headers.common['authorization'] = 'Bearer ' + req.session.token;
         res.status(200).send({
             msg: 'Login successfull!',
             user: medFacility
@@ -227,6 +229,9 @@ app.post('/addPatient', async (req, res) =>  {
 });
 
 app.post('/addMFL', async (req, res) =>  {
+    await axios.post('http://localhost:3001/admins').catch((err) => {
+        console.error(err)
+    });
     console.log(req.body);
     const { name, instituteID, email, password, userType } = req.body;
       
@@ -266,7 +271,6 @@ app.post('/search', async (req, res) => {
 
     if (res_ledger && res_ledger.status === 200) {
         const user = res_ledger.data;
-        console.log(user)
         console.log("Found result for "+ user.username)
         res.status(200).send({
             msg: 'User Found!',
@@ -314,9 +318,8 @@ app.post('/requestAccess', async (req, res) => {
 });
 
 app.post('/getInstitutionNameFromID', async (req, res) => {
-    console.log(req.body);
     const { ids } = req.body;
-    const requestsMap = await getInstitutionNameFromID(ids);
+    const requestsMap = await getInstitutionNameFromIDS(ids);
     var obj = Object.fromEntries(requestsMap);
     var jsonString = JSON.stringify(obj);
     res.status(200).send({
@@ -326,11 +329,10 @@ app.post('/getInstitutionNameFromID', async (req, res) => {
 });
 
 app.post('/denyRequest', async (req, res) => {
-    console.log(req.body);
     const { HCNumber, instituteID } = req.body;
     const update = await removeRequest(HCNumber, instituteID);
 
-    const res_ledger = await axios.delete(`http://localhost:3001/patients/${HCNumber}/pendingRequest/${instituteID}`).catch((err) => {
+    const res_ledger = await axios.delete(`http://localhost:3001/patients/${HCNumber}/pendingRequests/${instituteID}`).catch((err) => {
         console.error(err)
     });
 
@@ -419,6 +421,7 @@ app.get('/logout',(req,res) => {
 
 });
 const localStorage = new LocalStorage('./scratch');
+
 async function addFile(fileName, filePath) {
     // Pack files into a CAR and send to web3.storage
     const file = await getFilesFromPath(filePath)
@@ -437,10 +440,11 @@ function getClient() {
 app.get('/queryFileFromIPFS', async (req, res) => {
 
     try {
-        let ipfsHash = "bafybeif4zgqaiaoslxztmfvjp5ulvvpg3hpm45s7kabdkbynvwni2fjax4";
-        let ipfsFileName = "first";
-        let downloadedFile = await retrieveFile(ipfsHash, ipfsFileName);
-        // downloadedFile = DECRYPT HEREEEEEE
+        let ipfsHash = req.query.hash;
+        let ipfsFileName = req.query.fileName;
+        const currentPatient = JSON.parse(req.query.currentPatient);
+        const key = currentPatient.username+currentPatient.firstName //TODO: maybe hash this later
+        let downloadedFile =  retrieveAndDecryptFromIPFS(key, ipfsHash, ipfsFileName)
 
         fs.access(downloadedFile, function (exists) {
             if (exists) {
@@ -458,41 +462,54 @@ app.get('/queryFileFromIPFS', async (req, res) => {
     }
 });
 
-async function retrieveFile(cid, fileName = "first") {
-    fileName = "../public/" + fileName+".pdf";
-    const file = fs.createWriteStream(fileName);
-    const link = getLink(cid,"first")
-    const request = https.get(link, function (response) {
+async function retrieveFile(link, fileName = "first") {
+    const filePath = "../public/encryptedFile.pdf";
+    const file = fs.createWriteStream(filePath);
+    console.log(link)
+    // const link = getLink(cid,fileName)
+    const request = await https.get(link, function (response) {
         response.pipe(file);
     });
-    return fileName;
+    await decryptFile(filePath)
+    return filePath;
   }
 
-app.get('/getFilesFromLedger', async (req, res) => {
-    const fileName = "first" // req.body.fileName
-    const cid = "bafybeif4zgqaiaoslxztmfvjp5ulvvpg3hpm45s7kabdkbynvwni2fjax4"  // req.body.cid
-    const link = getLink(cid,fileName);
-    console.log(link)
-    const files = [{link: link, name: fileName}]
+app.get('/getAllFilesFromLedger', async (req, res) => {
+    const patient = JSON.parse(req.query.patient)
+    console.log("Number of records is " + patient.records.length)
+    const files = []
+    for (let record of patient.records) {
+        const link = getLink(record.hash,record.fileName);
+        const mfName = await getInstitutionNameFromID(record.issuer)
+        files.push({link: link, name: record.fileName, issuer: mfName, hash: record.hash})
+    }
     res.status(200).send({files: files});
 })
 
 app.post('/upload', (req, res) =>  {
     const file = req.files.file;
     const fileName = req.body.fileName;
-    const currentPatient = req.body.currentPatient; //use to save for a specific patient
-    const filePath =  '../public/'  + fileName;
+    const currentPatient = JSON.parse(req.body.currentPatient); //use to save for a specific patient
+    const filePath =  '../public/'  + fileName + ".pdf";
 
+    console.log(currentPatient)
     file.mv(filePath, async (err)  => {
         if (err) {
             console.log('Error: failed to download the file');
             return res.status(500).send(err);
         }
+        const key = currentPatient.username+currentPatient.firstName //TODO: maybe hash this later
+        const fileHash = await encryptAndStoreInIPFS(key,filePath)
 
-        const fileHash = await addFile(fileName, filePath);
-        
+        if (!fileHash) 
+            return res.status(500).send("Couldn't encrypt/upload"); 
         fs.unlink(filePath, (err) => {
             if (err) console.log(err);
+        });
+
+        const res_ledger = await axios.post(`http://localhost:3001/patients/${currentPatient.username}/records/${fileHash}`, { fileName: fileName}).catch((err) => {
+            console.error("Error: failed to save in ledger with error: " + err)
+            return res.status(500).send(err);
         });
 
         const link = getLink(fileHash,fileName);
@@ -513,5 +530,82 @@ app.get('/getLink', (req,res) => {
     }
     return res.status(200).send({link: null});
 });
+
+async function encryptAndStoreInIPFS(password, filePath) {
+    const salt = crypto.randomBytes(16);
+    const iterations = 100;
+    const keyLength = 32; // 256-bit key for AES-256
+    const encryptionKey = crypto.pbkdf2Sync(password, salt, iterations, keyLength, 'sha256');
+  
+    const fileContents = fs.readFileSync(filePath);
+  
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes256', encryptionKey, iv);
+    const hmac = crypto.createHmac('sha256', encryptionKey);
+    let encryptedData = cipher.update(fileContents, 'utf8', 'hex');
+    encryptedData += cipher.final('hex');
+    hmac.update(encryptedData);
+  
+    const encryptedBuffer = Buffer.from(encryptedData);
+    const saltBuffer = Buffer.from(salt);
+    const ivBuffer = Buffer.from(iv);
+    const macBuffer = Buffer.from(hmac.digest('hex'), 'hex');
+    console.log(macBuffer)
+    const metadata = {
+      salt: saltBuffer,
+      iv: ivBuffer,
+      mac: macBuffer
+    };
+    const metadataString = JSON.stringify(metadata);
+
+    const files = [
+        await new File([encryptedBuffer],'encrypted-file' ),
+        await new File([Buffer.from(metadataString)],"metadata.json" )
+      ]
+    const cid = await client.put(files);
+
+    console.log(cid)
+    return cid;
+  }
+  
+async function retrieveAndDecryptFromIPFS(password="key", cid, ipfsFileName) {
+    const res = await client.get(cid);
+
+    if (!res.ok) {
+        throw new Error(`failed to get ${cid} - [${res.status}] ${res.statusText}`)
+      }
+
+    const files = await res.files()
+  
+    const encryptedData = (await files[0].text());
+    const metadata = JSON.parse(await files[1].text());
+
+    const salt = new Uint8Array((Buffer)(metadata.salt.data));
+    const iv = new Uint8Array((Buffer)(metadata.iv.data));
+    const mac = (Buffer)(metadata.mac.data)
+    console.log(mac)
+
+    const iterations = 100;
+    const keyLength = 32; // 256-bit key for AES-256
+    const encryptionKey = crypto.pbkdf2Sync(password, salt, iterations, keyLength, 'sha256');
+    const hmacToVerify = crypto.createHmac('sha256', encryptionKey);
+    hmacToVerify.update(encryptedData);
+
+    const verifyHmac = Buffer.from(hmacToVerify.digest('hex'), 'hex')
+    console.log(verifyHmac)
+    if (!crypto.timingSafeEqual(mac, verifyHmac)) {
+      throw new Error('You failed: MAC verification failed');
+    }
+
+    const encryptedBuffer = Buffer.from(encryptedData, 'hex');
+    const encryptedArray = new Uint8Array(encryptedBuffer);
+    const decipher = crypto.createDecipheriv('aes256', encryptionKey, iv);
+    let decryptedArray = decipher.update(encryptedArray);
+    decryptedArray = Buffer.concat([decryptedArray, decipher.final()]);
+    
+    const decryptedBuffer = Buffer.from(decryptedArray);
+    fs.writeFileSync('../public/'+ipfsFileName+'.pdf', decryptedBuffer);
+    return decryptedBuffer;
+  }
 
 export default app;
