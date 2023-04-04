@@ -9,6 +9,7 @@ import Table from "./Table.js";
 function OpenPatientFile(props) {
     const [tableData, setTableData] = useState([]);
     const params= useLocation();
+    const [isPatient, setIsPatient] = useState(null);
     const foundUser = params.state.foundUser;
     let upload = <Link to='/uploadpage' state={{foundUser}}> <button className="home-button" type="button"> Upload </button> </Link> 
 
@@ -17,6 +18,9 @@ function OpenPatientFile(props) {
             const res = await axios.get("/getAllFilesFromLedger", {params: { patient: JSON.stringify(foundUser)}}); 
             setTableData(res.data.files);
         })();
+        axios.get('/isPatient').then(({data}) => {
+            setIsPatient(data);
+          })
       }, []);
     const data1 = React.useMemo(() => tableData)
 
@@ -75,7 +79,7 @@ function OpenPatientFile(props) {
                     marginTop: 100,
             }}>
             <Table columns={columns} data={data1} actionOnClick={getPatientFile}/>
-            {foundUser.identity!='patient'? upload:null}
+            {isPatient? null:upload}
             </Box>
         </div>
     );

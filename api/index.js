@@ -1,5 +1,6 @@
 import { Web3Storage, getFilesFromPath, File } from 'web3.storage';
 import https from 'https';
+import path from 'path';
 import fileUpload from 'express-fileupload';
 import CryptoJS from "crypto-js";
 import crypto from "crypto";
@@ -450,6 +451,16 @@ app.get('/queryFileFromIPFS', async (req, res) => {
             if (exists) {
                 res.writeHead(200, {
                 });
+                // res.download(__dirname,
+                //             fileName,
+                //             (err) => {
+                //                 if (err) {
+                //                     res.send({
+                //                         error : err,
+                //                         msg   : "Problem downloading the file"
+                //                     })
+                //                 }
+                //             });
                 fs.createReadStream(downloadedFile).pipe(res);
 
             } else {
@@ -463,7 +474,7 @@ app.get('/queryFileFromIPFS', async (req, res) => {
 });
 
 async function retrieveFile(link, fileName = "first") {
-    const filePath = "../public/encryptedFile.pdf";
+    const filePath = "../public/encryptedFile";
     const file = fs.createWriteStream(filePath);
     console.log(link)
     // const link = getLink(cid,fileName)
@@ -488,9 +499,9 @@ app.get('/getAllFilesFromLedger', async (req, res) => {
 
 app.post('/upload', (req, res) =>  {
     const file = req.files.file;
-    const fileName = req.body.fileName;
+    const fileName = req.body.fileName+path.extname(file.name);
     const currentPatient = JSON.parse(req.body.currentPatient); //use to save for a specific patient
-    const filePath =  '../public/'  + fileName + ".pdf";
+    const filePath =  '../public/'  + fileName;
 
     console.log(currentPatient)
     file.mv(filePath, async (err)  => {
@@ -568,7 +579,7 @@ async function encryptAndStoreInIPFS(password, filePath) {
     return cid;
   }
   
-async function retrieveAndDecryptFromIPFS(password="key", cid, ipfsFileName) {
+async function retrieveAndDecryptFromIPFS(password, cid, ipfsFileName) {
     const res = await client.get(cid);
 
     if (!res.ok) {
@@ -604,7 +615,7 @@ async function retrieveAndDecryptFromIPFS(password="key", cid, ipfsFileName) {
     decryptedArray = Buffer.concat([decryptedArray, decipher.final()]);
     
     const decryptedBuffer = Buffer.from(decryptedArray);
-    fs.writeFileSync('../public/'+ipfsFileName+'.pdf', decryptedBuffer);
+    fs.writeFileSync('../public/'+ipfsFileName, decryptedBuffer);
     return decryptedBuffer;
   }
 
