@@ -16,7 +16,7 @@ function UploadPage() {
 
     useEffect(() => {   
         if (!clicked) return;
-         getLink()
+        getLink()
     },[state]);
 
     const getLink = async () => {

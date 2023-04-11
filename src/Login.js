@@ -17,7 +17,7 @@ function Login () {
 
     useEffect(() => {
         const loggedInUser = localStorage.getItem("user");
-        if (loggedInUser) {
+        if (loggedInUser && loggedInUser != "undefined") {
            user = JSON.parse(loggedInUser);
         }
       }, []);
@@ -94,7 +94,7 @@ function Login () {
             const res = await axios.post('/authenticateWithLedger', { username: user.HCNumber, password: user.password, seed: seed, identity: "patient" }).catch((err) => {
                 setLoginError(err.response.data.msg);
             });
-            if (res.status != 200) {
+            if (res.status !== 200) {
                 const res_logout = await axios.get('/logout');
                 if(res_logout.status === 200) {
                     navigate('/');
@@ -255,7 +255,7 @@ function Login () {
             <EncryptionKeyPopupPatient show={showEncryptionKeyPopupPatient} onHide={() => setEncryptionKeyPopupPatient(false)}/>
         </div>
         );
-    } else if(auth == null) {
+    } else if(auth === null) {
         return(
             <div className="login">
                 <Header />

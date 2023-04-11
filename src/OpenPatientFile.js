@@ -1,14 +1,14 @@
 import React, {useState, useEffect, useMemo} from 'react';
 import Box from './Box.js';
 import Header from './Header.js';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { CircularProgress} from '@mui/material';
+import { useLocation, Link } from 'react-router-dom';
+// import { CircularProgress} from '@mui/material';
 import axios from 'axios';
 import Table from "./Table.js";
 
 function OpenPatientFile(props) {
     const [tableData, setTableData] = useState([]);
-    const params= useLocation();
+    const params = useLocation();
     const [isPatient, setIsPatient] = useState(null);
     const foundUser = params.state.foundUser;
     let upload = <Link to='/uploadpage' state={{foundUser}}> <button className="home-button" type="button"> Upload </button> </Link> 
@@ -60,6 +60,9 @@ function OpenPatientFile(props) {
             console.log(err)
         })
     }
+    const displayTable = async() => {
+        return <Table columns={columns} data={data1} actionOnClick={getPatientFile}/>
+    }
   
     return (
         <div className="open-patient-file">
@@ -78,8 +81,8 @@ function OpenPatientFile(props) {
                     marginRight: 'auto',
                     marginTop: 100,
             }}>
-            <Table columns={columns} data={data1} actionOnClick={getPatientFile}/>
-            {isPatient? null:upload}
+                {tableData.length === 0 ? <h2 style={{fontFamily: 'Quicksand', color: "black", marginTop: 150}}> No health record available to display. </h2>: displayTable}
+                {isPatient? null:upload}
             </Box>
         </div>
     );

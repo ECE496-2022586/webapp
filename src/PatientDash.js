@@ -137,7 +137,26 @@ function PatientDashboard() {
     const res = await axios.post('/removeAccess', { HCNumber, instituteID });
     if(res.status === 200) {
       accessMap.delete(instituteID);
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      await setUser(res.data.user);
+      await updateUser(res.data.user)
     }
+  }
+
+  async function updateUser(user1) {
+    console.log(user1)
+    const res_req = await axios.post('/getInstitutionNameFromID', { ids: user1.pendingRequests });
+    if(res_req.status === 200) localStorage.setItem('requestsString', res_req.data.requestsString)
+
+    const res_access = await axios.post('/getInstitutionNameFromID', { ids: user1.approvedRequests });
+    if(res_access.status === 200) {
+      console.log("HERE")
+      console.log(res_access)
+      setAccessListOfMfString(res_access.data.requestsString)
+      localStorage.setItem('accessListOfMfString', res_access.data.requestsString)
+    }
+    setAccessListOfMfString(localStorage.getItem('accessListOfMfString'))
+    setRequestsString(localStorage.getItem('requestsString'))
   }
 
   const AcceptPopUp = (props) => {
@@ -205,12 +224,13 @@ function PatientDashboard() {
     const res = await axios.post('/denyRequest', { HCNumber, instituteID });
     if(res.status === 200) {
       requestsMap.delete(instituteID);
-      // window.location.reload(false);
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      await setUser(res.data.user)
+      await updateUser(res.data.user)
     }
   }
 
   const validateSeed = async (e) => {
-    console.log(user)
     e.preventDefault();
     const seed = e.target.previousElementSibling.value;
     const HCNumber = user.username;
@@ -218,14 +238,15 @@ function PatientDashboard() {
     const res = await axios.post('/insertAccessList', { HCNumber, instituteID, seed });
     if(res.status === 200) {
       setAcceptPopup(false)
-      console.log(res);
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      await setUser(JSON.parse(JSON.stringify(res.data.user)));
+      console.log(JSON.parse(JSON.stringify(res.data.user)))
+      await updateUser(res.data.user)
     }
 }
 const AccessTable = () => {
   if (user && user.approvedRequests) {
-    console.log("IN 1")
     if (user.approvedRequests.length) {
-      console.log("IN 2")
       return (
         <Box style={{
           backgroundColor: 'transparent',

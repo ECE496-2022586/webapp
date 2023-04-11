@@ -336,10 +336,12 @@ app.post('/denyRequest', async (req, res) => {
     const res_ledger = await axios.delete(`http://localhost:3001/patients/${HCNumber}/pendingRequests/${instituteID}`).catch((err) => {
         console.error(err)
     });
+    console.log(res_ledger)
 
     if(update && update.rowCount == 1) {
         res.status(200).send({
             msg: 'Deny Sent!',
+            user: res_ledger.data
         });
     } else {
         res.status(403).send({
@@ -359,6 +361,7 @@ app.post('/removeAccess', async (req, res) => {
     if(update && update.rowCount == 1 && res_ledger.status == 200) {
         res.status(200).send({
             msg: 'Revoked Access!',
+            user: res_ledger.data
         });
     } else {
         res.status(403).send({
@@ -385,6 +388,7 @@ app.post('/insertAccessList', async (req, res) => {
     if(update && update.rowCount == 1 && removal && removal.rowCount == 1 && res_ledger.status == 200) {
         res.status(200).send({
             msg: 'Granted Access!',
+            user: res_ledger.data
         });
     } else {
         res.status(403).send({

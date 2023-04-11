@@ -11,8 +11,10 @@ function NavBar() {
 
     useEffect(() => {
         const loggedInUser = localStorage.getItem("user");
-        if (loggedInUser) {
+        if (loggedInUser !== "undefined" && loggedInUser !== null) {
            setUser(JSON.parse(loggedInUser));
+        } else {
+            setAuth(false)
         }
       }, []);
 
