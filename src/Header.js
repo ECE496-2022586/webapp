@@ -61,8 +61,17 @@ function NavBar() {
                                     Home
                                 </button>
                             </Link> 
-    } else {
+    } else if (auth && !isPatient) {
         dashboardButton =   <Link to='/MFDashboard'>
+                                <button
+                                    className="home-button"
+                                    type="menu-button"
+                                >
+                                    Home
+                                </button>
+                            </Link> 
+    } else {
+        dashboardButton =   <Link to='/'>
                                 <button
                                     className="home-button"
                                     type="menu-button"
