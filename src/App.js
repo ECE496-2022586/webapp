@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import './App.css';
 import { Login } from './Login.js';
 import Home from './Home.js';
+import HowTo from './HowTo.js';
 import { UploadPage } from './UploadPage.js';
 import PatientDashboard from './PatientDash.js';
 import MedicalFacilityDashboard from './MedicalFacilityDash.js';
@@ -17,7 +18,7 @@ function App() {
         <Route exact path="/" element={<Home />}/>
         <Route path="/login" element={<Login />}/>
         <Route path="/uploadpage" element={<UploadPage />}/>
-        {/* <Route path="/how-to" element={<HowTo />}/> */}
+        <Route path="/how-to" element={<HowTo />}/>
         <Route path="/PDashboard" element={<PatientDashboard />}/>
         <Route path="/MFDashboard" element={<MedicalFacilityDashboard />}/>
         <Route path="/openpatientfile" element={<OpenPatientFile />}/>
