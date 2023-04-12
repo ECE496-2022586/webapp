@@ -52,13 +52,22 @@ function NavBar() {
     }
 
     let dashboardButton;
-    if (auth && !isPatient) {
+    if (auth && isPatient) {
+        dashboardButton =   <Link to='/PDashboard'>
+                                <button
+                                    className="home-button"
+                                    type="menu-button"
+                                >
+                                    Home
+                                </button>
+                            </Link> 
+    } else {
         dashboardButton =   <Link to='/MFDashboard'>
                                 <button
                                     className="home-button"
                                     type="menu-button"
                                 >
-                                    Dashboard
+                                    Home
                                 </button>
                             </Link> 
     }
@@ -83,14 +92,7 @@ function NavBar() {
               marginLeft: 360,
               marginTop: -35,
             }}>
-                <Link to='/'>
-                    <button
-                        className="home-button"
-                        type="menu-button"
-                    >
-                        Home
-                    </button>
-                </Link> 
+                {dashboardButton} 
                 <Link to='/how-to'>
                     <button
                         className="home-button"
@@ -98,8 +100,7 @@ function NavBar() {
                     >
                         How-to
                     </button>
-                </Link> 
-                {dashboardButton} 
+                </Link>
                 {openPatientFile} 
                 {loginButton}
           </Box>
