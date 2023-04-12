@@ -56,7 +56,7 @@ function OpenPatientFile(props) {
     const getPatientFile = async (rowData) => {
         const link = rowData.link
         const fileName = rowData.name
-        await axios.get('/queryFileFromIPFS',{params: {link: link, fileName: fileName, hash:rowData.hash, currentPatient: JSON.stringify(foundUser)}}, { responseType: 'blob' }).then(response => {
+        await axios.get('/queryFileFromIPFS',{params: {link: link, fileName: fileName, hash:rowData.hash, currentPatient: JSON.stringify(foundUser)}, responseType: 'blob' }).then(response => {
             const blob = new Blob([response.data], { type: 'application/octet-stream' });
             const downloadUrl = URL.createObjectURL(blob);
 
