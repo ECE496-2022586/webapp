@@ -11,7 +11,7 @@ function OpenPatientFile(props) {
     const params = useLocation();
     const [isPatient, setIsPatient] = useState(null);
     const foundUser = params.state.foundUser;
-    let upload = <Link to='/uploadpage' state={{foundUser}}> <button className="home-button" type="button"> Upload </button> </Link> 
+    const upload = <Link to='/uploadpage' state={{foundUser}}> <button className="home-button" type="button"> Upload </button> </Link> 
 
     useEffect(() => {
         (async () => {
@@ -56,12 +56,21 @@ function OpenPatientFile(props) {
     const getPatientFile = async (rowData) => {
         const link = rowData.link
         const fileName = rowData.name
-        await axios.get('/queryFileFromIPFS',{params: {link: link, fileName: fileName, hash:rowData.hash, currentPatient: JSON.stringify(foundUser)}}).catch((err) => {
+        await axios.get('/queryFileFromIPFS',{params: {link: link, fileName: fileName, hash:rowData.hash, currentPatient: JSON.stringify(foundUser)}}, { responseType: 'blob' }).then(response => {
+            const blob = new Blob([response.data], { type: 'application/octet-stream' });
+            const downloadUrl = URL.createObjectURL(blob);
+
+            const anchor = document.createElement('a');
+            anchor.href = downloadUrl;
+            anchor.download = fileName; 
+            anchor.type = 'application/octet-stream'; 
+            document.body.appendChild(anchor);
+            anchor.click();
+
+            URL.revokeObjectURL(downloadUrl);
+          }).catch((err) => {
             console.log(err)
         })
-    }
-    const displayTable = async() => {
-        return <Table columns={columns} data={data1} actionOnClick={getPatientFile}/>
     }
   
     return (
@@ -81,7 +90,10 @@ function OpenPatientFile(props) {
                     marginRight: 'auto',
                     marginTop: 100,
             }}>
-                {tableData.length === 0 ? <h2 style={{fontFamily: 'Quicksand', color: "black", marginTop: 150}}> No health record available to display. </h2>: displayTable}
+                {tableData.length === 0 ? 
+                    <h2 style={{fontFamily: 'Quicksand', color: "black", marginTop: 150}}> No health record available to display. </h2>
+                    : <Table columns={columns} data={data1} actionOnClick={getPatientFile}/>
+                }
                 {isPatient? null:upload}
             </Box>
         </div>

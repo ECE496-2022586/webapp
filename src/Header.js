@@ -65,7 +65,7 @@ function NavBar() {
 
     let openPatientFile;
 
-    if(auth && isPatient  && user) {
+    if(auth && isPatient && user) {
         let foundUser = user
         openPatientFile  =   <Link to="/openpatientfile" state={{foundUser}}> <button type="menu-button" style={{fontSize:20}}>View Records</button></Link> 
     }

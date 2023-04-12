@@ -449,30 +449,19 @@ app.get('/queryFileFromIPFS', async (req, res) => {
         let ipfsFileName = req.query.fileName;
         const currentPatient = JSON.parse(req.query.currentPatient);
         const key = currentPatient.username+currentPatient.firstName //TODO: maybe hash this later
-        let downloadedFile =  retrieveAndDecryptFromIPFS(key, ipfsHash, ipfsFileName)
+        const downloadedFileStream =  await retrieveAndDecryptFromIPFS(key, ipfsHash, ipfsFileName)
+        const filePath  = "../public/"+ipfsFileName
 
-        fs.access(downloadedFile, function (exists) {
-            if (exists) {
-                res.writeHead(200, {
-                });
-                // res.download(__dirname,
-                //             fileName,
-                //             (err) => {
-                //                 if (err) {
-                //                     res.send({
-                //                         error : err,
-                //                         msg   : "Problem downloading the file"
-                //                     })
-                //                 }
-                //             });
-                fs.createReadStream(downloadedFile).pipe(res);
-
-            } else {
-                res.writeHead(400, { "Content-Type": "text/plain" });
-                res.end("ERROR File does not exist");
+        await fs.access(filePath, (err) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).send(err);
             }
+            const fileStream = fs.createReadStream(filePath);
+            fileStream.pipe(res);
         });
     } catch (err) {
+        console.log(err)
         res.status(500).send(err);
     }
 });
@@ -619,7 +608,7 @@ async function retrieveAndDecryptFromIPFS(password, cid, ipfsFileName) {
     decryptedArray = Buffer.concat([decryptedArray, decipher.final()]);
     
     const decryptedBuffer = Buffer.from(decryptedArray);
-    fs.writeFileSync('../public/'+ipfsFileName, decryptedBuffer);
+    await fs.writeFileSync('../public/'+ipfsFileName, decryptedBuffer);
     return decryptedBuffer;
   }
 

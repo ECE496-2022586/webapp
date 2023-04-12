@@ -11,7 +11,7 @@ export default function Table({ columns, data, actionOnClick }) {
   } = useTable({ columns, data, initialState: {hiddenColumns: ["hash","link"]}});
 
   return (
-    <table {...getTableProps()} class="myTable2">
+    <table {...getTableProps()} className="myTable2">
       <thead>
         {headerGroups.map(headerGroup => (
           <tr {...headerGroup.getHeaderGroupProps()}>
@@ -25,7 +25,7 @@ export default function Table({ columns, data, actionOnClick }) {
         {rows.map((row, i) => {
           prepareRow(row);
           return (
-            <tr {...row.getRowProps()} class="tableRow">
+            <tr {...row.getRowProps()} className="tableRow">
               {row.cells.map(cell => {
                 return <td onClick={() => actionOnClick(cell?.row?.original)} {...cell.getCellProps()}>{cell.render("Cell")}</td>;
               })}

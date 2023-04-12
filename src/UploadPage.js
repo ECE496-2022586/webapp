@@ -64,7 +64,7 @@ function UploadPage() {
                     marginLeft: 560,
                     marginTop: 100,
             }}>
-                 <button className="request-button" type="button" onClick={()=>navigate(-1)}>Back</button>
+                <button className="request-button" type="button" onClick={()=>navigate(-1)}>Back</button>
                 <div className="upload">
                     <form onSubmit={handleSubmit(onSubmit)}>
                         {/* <TextField id="outlined-basic" label="File name" variant="outlined" {...register("fileName")} required/> */}
